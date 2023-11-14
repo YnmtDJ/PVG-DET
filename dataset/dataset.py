@@ -1,6 +1,5 @@
-import os
-
 import cv2
+import torch
 import torchvision.datasets
 from torchvision.transforms import v2
 
@@ -13,36 +12,44 @@ def create_coco_dataset(root: str, annFile: str, augment: bool):
     :param augment: Whether to perform data augmentation.
     :return: The torch.utils.data.Dataset().
     """
-    normalize = torchvision.transforms.Compose([
-            torchvision.transforms.ToTensor(),
-            torchvision.transforms.Normalize(
-                [0.485, 0.456, 0.406], [0.229, 0.224, 0.225]
-            )
+    normalize = v2.Compose([
+            v2.ToDtype(torch.float32, scale=True),
+            v2.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
     ])
 
     if augment:
         size = (224, 224)  # the size of output image
-        ratio = size[0]/size[1]  # the aspect ratio of the crop
-        transforms = torchvision.transforms.Compose([
-                torchvision.transforms.RandomHorizontalFlip(),
-                torchvision.transforms.RandomResizedCrop(size, scale=(0.8, 1.0), ratio=(ratio, ratio)),
-                normalize
+        ratio = size[1]/size[0]  # the aspect ratio of the crop
+        transforms = v2.Compose([
+            v2.ToImage(),
+            v2.RandomHorizontalFlip(),
+            v2.RandomResizedCrop(size, scale=(0.8, 1.0), ratio=(ratio, ratio), antialias=True),
+            v2.SanitizeBoundingBoxes(),
+            normalize
         ])
     else:
-        transforms = normalize
+        transforms = v2.Compose([
+            v2.ToImage(),
+            normalize
+        ])
 
-    return torchvision.datasets.CocoDetection(root=root, annFile=annFile, transforms=torchvision.transforms.ToTensor())
+    dataset = torchvision.datasets.CocoDetection(root=root, annFile=annFile, transforms=transforms)
+    return torchvision.datasets.wrap_dataset_for_transforms_v2(dataset, target_keys=["boxes", "labels"])
 
 
 if __name__ == "__main__":
-    dataset = create_coco_dataset(root="./COCO/images/val2017", annFile="./COCO/annotations/instances_val2017.json", augment=True)
-    image, target = dataset[0]
+    # demo for the create_coco_dataset()
+    test_dataset = create_coco_dataset(root="./COCO/images/val2017", annFile="./COCO/annotations/instances_val2017.json", augment=True)
+    image, target = test_dataset[0]
     image = image.permute(1, 2, 0).numpy()
     image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
-    bbox = target[0]['bbox']
 
-    cv2.rectangle(image, (int(bbox[0]), int(bbox[1])), (int(bbox[0]+bbox[2]), int(bbox[1]+bbox[3])), (0, 0, 255), thickness=2)
+    for i in range(len(target['boxes'])):
+        bbox = target['boxes'][i]
+        label = target['labels'][i]
+        print(label)
+        cv2.rectangle(image, (int(bbox[0]), int(bbox[1])), (int(bbox[2]), int(bbox[3])), (0, 0, 255))
 
-    cv2.imshow("test", image)
+    cv2.imshow("demo", image)
     cv2.waitKey()
 
