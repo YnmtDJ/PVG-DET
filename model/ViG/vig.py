@@ -1,10 +1,17 @@
 from torch import nn
 
 
-"""
-Vision GNN: An Image is Worth Graph of Nodes
-https://github.com/huawei-noah/Efficient-AI-Backbones/tree/master/vig_pytorch
-"""
+
+class ViG(nn.Module):
+    """
+    Vision GNN: An Image is Worth Graph of Nodes
+    https://github.com/huawei-noah/Efficient-AI-Backbones/tree/master/vig_pytorch
+    """
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+    def forward(self, x):
+        return 2*x
 
 
 class Stem(nn.Module):
@@ -12,7 +19,7 @@ class Stem(nn.Module):
     Image to Visual Word Embedding Overlap
     https://github.com/whai362/PVT
     """
-    def __init__(self, in_ch=3, out_ch=768, act=nn.ReLU()):
+    def __init__(self, in_ch=3, out_ch=768, act=nn.GELU()):
         """
         :param in_ch: The number of input channels.
         :param out_ch: The number of output channels.
