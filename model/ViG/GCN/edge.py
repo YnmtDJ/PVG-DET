@@ -8,6 +8,10 @@ class DenseDilatedKnnGraph(nn.Module):
     Find the neighbors' indices based on dilated knn
     """
     def __init__(self, k=9, dilation=1):
+        """
+        :param k: The number of neighbors
+        :param dilation: The dilation rate
+        """
         super(DenseDilatedKnnGraph, self).__init__()
         self.dilation = dilation
         self.k = k
