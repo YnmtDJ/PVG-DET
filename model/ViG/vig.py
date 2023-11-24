@@ -1,4 +1,5 @@
 import numbers
+from typing import Union, Sequence
 
 import torch
 from timm.layers import DropPath
@@ -12,10 +13,9 @@ class ViG(nn.Module):
     Vision GNN: An Image is Worth Graph of Nodes. (Without pyramid)
     https://github.com/huawei-noah/Efficient-AI-Backbones/tree/master/vig_pytorch
     """
-    def __init__(self, size, in_ch=3, out_ch=192, act=nn.GELU(), drop_prob=0.1, n_blocks=12, k=9, use_dilation=True,
+    def __init__(self, in_ch=3, out_ch=192, act=nn.GELU(), drop_prob=0.1, n_blocks=12, k=9, use_dilation=True,
                  gcn='MRConv2d'):
         """
-        :param size: The size of input image.
         :param in_ch: The number of input channels.
         :param out_ch: The number of output channels.
         :param act: The activation function.
@@ -26,18 +26,16 @@ class ViG(nn.Module):
         :param gcn: The graph convolution type. (MRConv2d, EdgeConv2d, GraphSAGE, GINConv2d)
         """
         super(ViG, self).__init__()
-        if isinstance(size, numbers.Number):
-            height = width = int(size)
-        else:
-            height, width = size
+        max_size = (800, 800)  # the maximum size of the input image
+        min_size = (224, 224)  # the minimum size of the input image
         self.n_blocks = n_blocks
 
         self.stem = Stem(in_ch, out_ch, act)
-        self.pos_embed = nn.Parameter(torch.zeros(1, out_ch, height//16, width//16))
+        self.pos_embed = nn.Parameter(torch.zeros(1, out_ch, max_size[0]//16, max_size[1]//16))
 
         drop_probs = [x.item() for x in torch.linspace(0, drop_prob, n_blocks)]  # stochastic depth decay rule
         n_knn = [int(x.item()) for x in torch.linspace(k, 2*k, n_blocks)]  # number of neighbors
-        max_dilation = (height//16)*(width//16) // max(n_knn)
+        max_dilation = (min_size[0]//16)*(min_size[1]//16) // max(n_knn)
 
         if use_dilation:
             self.backbone = nn.Sequential(*[
@@ -59,7 +57,8 @@ class ViG(nn.Module):
         self.model_init()
 
     def forward(self, inputs):
-        x = self.stem(inputs) + self.pos_embed  # (batch_size, out_ch, height/16, width/16)
+        x = self.stem(inputs)  # (batch_size, out_ch, height/16, width/16)
+        x = x + self.pos_embed[:, :, :x.shape[2], :x.shape[3]]
         for i in range(self.n_blocks):
             x = self.backbone[i](x)  # (batch_size, out_ch, height/16, width/16)
         return x
@@ -81,6 +80,7 @@ class Stem(nn.Module):
     """
     def __init__(self, in_ch=3, out_ch=768, act=nn.GELU()):
         """
+        The image resolution will be divided by 16×16.
         :param in_ch: The number of input channels.
         :param out_ch: The number of output channels.
         :param act: The activation function.
