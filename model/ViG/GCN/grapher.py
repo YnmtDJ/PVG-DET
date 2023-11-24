@@ -185,7 +185,7 @@ def batched_index_select(x, idx):
 
     """
     Turn the tensor into a one-dimensional, 
-    so the idx in each batch increases batch_size from the previous batch
+    so the idx in each batch increases num_points from the previous batch
     x - (batch_size*num_points, num_dims)
     idx - (batch_size*num_points*k)
     feature - (batch_size*num_points*k, num_dims)
