@@ -18,12 +18,11 @@ def create_coco_dataset(root: str, annFile: str, augment: bool):
     ])
 
     if augment:
-        size = (224, 224)  # the size of output image
-        ratio = size[1]/size[0]  # the aspect ratio of the crop
         transforms = v2.Compose([
             v2.ToImage(),
             v2.RandomHorizontalFlip(),
-            v2.RandomResizedCrop(size, scale=(0.8, 1.0), ratio=(ratio, ratio), antialias=True),
+            v2.RandomIoUCrop(),
+            v2.RandomResize(224, 400, antialias=True),
             v2.SanitizeBoundingBoxes(),
             normalize
         ])
