@@ -2,7 +2,7 @@ import torch
 from timm.models.layers import DropPath
 from torch import nn
 
-from model.ViG.GCN.edge import DenseDilatedKnnGraph
+from model.vig.gcn.edge import DenseDilatedKnnGraph
 
 
 class Grapher(nn.Module):

@@ -5,7 +5,7 @@ import torch
 from timm.layers import DropPath
 from torch import nn
 
-from model.ViG.GCN.grapher import Grapher
+from model.vig.gcn.grapher import Grapher
 
 
 class ViG(nn.Module):
