@@ -9,13 +9,13 @@ class DeGCN(nn.Module):
     """
     End-to-end object detection with graph convolution network and transformer.
     """
-    def __init__(self, num_classes, num_queries=100, d_model=192):
+    def __init__(self, max_id, num_queries=100, d_model=192):
         super(DeGCN, self).__init__()
         self.vig = ViG()
         self.query_embed = nn.Parameter(torch.randn(num_queries, 1, d_model))
         decoder_layer = nn.TransformerDecoderLayer(d_model, 8, 4*d_model)
         self.decoder = nn.TransformerDecoder(decoder_layer, 6, nn.LayerNorm(d_model))
-        self.class_embed = nn.Linear(d_model, num_classes + 1)
+        self.class_embed = nn.Linear(d_model, max_id + 1)
         self.bbox_embed = MLP(d_model, d_model, 4, 3)
 
     def forward(self, inputs):

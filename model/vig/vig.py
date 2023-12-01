@@ -1,6 +1,3 @@
-import numbers
-from typing import Union, Sequence
-
 import torch
 from timm.layers import DropPath
 from torch import nn
