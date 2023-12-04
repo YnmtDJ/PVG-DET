@@ -1,6 +1,7 @@
 import torch
 from scipy.optimize import linear_sum_assignment
 from torch import nn
+from torch.nn import functional as F
 from torchvision.ops import generalized_box_iou, box_convert
 
 
@@ -12,22 +13,17 @@ class SetCriterion(nn.Module):
       1) we compute hungarian assignment between ground truth boxes and the outputs of the model
       2) we supervise each pair of matched ground-truth / prediction (supervise class and box)
     """
-    def __init__(self, num_classes, weight_dict, eos_coef, losses):
-        """ Create the criterion.
-        Parameters:
-            num_classes: number of object categories, omitting the special no-object category
-            weight_dict: dict containing as key the names of the losses and as values their relative weight.
-            eos_coef: relative classification weight applied to the no-object category
-            losses: list of all the losses to be applied. See get_loss for list of available losses.
+    def __init__(self, num_classes, eos_coef=0.1):
         """
-        super().__init__()
+        Create the criterion.
+        :param num_classes: Number of object categories, omitting the special no-object category
+        :param eos_coef: Relative classification weight applied to the no-object category
+        """
+        super(SetCriterion, self).__init__()
         self.num_classes = num_classes
         self.matcher = HungarianMatcher()
-        self.weight_dict = weight_dict
-        self.eos_coef = eos_coef
-        self.losses = losses
         empty_weight = torch.ones(self.num_classes + 1)
-        empty_weight[-1] = self.eos_coef
+        empty_weight[-1] = eos_coef
         self.register_buffer('empty_weight', empty_weight)
 
     def forward(self, outputs, targets):
@@ -35,14 +31,13 @@ class SetCriterion(nn.Module):
         This performs the loss computation.
         :param outputs: Dict of tensors, see the output specification of the model for the format
         :param targets: List of dicts, such that len(targets) == batch_size.
-                        The expected keys in each dict depends on the losses applied, see each loss' doc
+                        The expected keys in each dict depends on the losses applied, see each loss' doc.
         """
-        outputs_without_aux = {k: v for k, v in outputs.items() if k != 'aux_outputs'}
-
         # Retrieve the matching between the outputs of the last layer and the targets
-        indices = self.matcher(outputs_without_aux, targets)
+        indices = self.matcher(outputs, targets)
 
         # Compute the average number of target boxes across all nodes, for normalization purposes
+        # TODO distribute computation
         num_boxes = sum(len(target["labels"]) for target in targets)
         # num_boxes = torch.as_tensor([num_boxes], dtype=torch.float, device=next(iter(outputs.values())).device)
         # if is_dist_avail_and_initialized():
@@ -51,12 +46,55 @@ class SetCriterion(nn.Module):
 
         # Compute all the requested losses
         losses = {}
-        for loss in self.losses:
-            losses.update(self.get_loss(loss, outputs, targets, indices, num_boxes))
-
+        losses.update(self.loss_labels(outputs, targets, indices))
+        losses.update(self.loss_boxes(outputs, targets, indices))
         return losses
 
+    def loss_labels(self, outputs, targets, indices):
+        """
+        Classification loss (NLL)
+        Targets dicts must contain the key "labels" containing a tensor of dim [nb_target_boxes]
+        """
+        assert 'pred_logits' in outputs
+        src_logits = outputs['pred_logits']  # (batch_size, num_queries, num_classes+1)
 
+        target_classes_o = torch.cat([target["labels"][index_j] for target, (_, index_j) in zip(targets, indices)])
+        target_classes = torch.full(src_logits.shape[:2], self.num_classes, dtype=torch.int64, device=src_logits.device)
+        idx = self._get_src_permutation_idx(indices)  # (batch_idx, src_idx) Fancy indexing
+        target_classes[idx] = target_classes_o
+
+        loss_ce = F.cross_entropy(src_logits, target_classes, self.empty_weight)
+        losses = {'loss_ce': loss_ce}
+        return losses
+
+    def loss_boxes(self, outputs, targets, indices):
+        """
+        Compute the losses related to the bounding boxes, the L1 regression loss and the GIoU loss
+        Targets dicts must contain the key "boxes" containing a tensor of dim [nb_target_boxes, 4]
+        The target boxes are expected in format (center_x, center_y, width, height), normalized by the image size.
+        """
+        assert 'pred_boxes' in outputs
+        idx = self._get_src_permutation_idx(indices)  # (batch_idx, src_idx) Fancy indexing
+        src_boxes = outputs['pred_boxes'][idx]  # (num_target_boxes, 4)
+        target_boxes = torch.cat([target['boxes'][index_j] for target, (_, index_j) in zip(targets, indices)], dim=0)
+        num_boxes = target_boxes.shape[0]
+
+        losses = {}
+        loss_bbox = F.l1_loss(src_boxes, target_boxes, reduction='none')
+        losses['loss_bbox'] = loss_bbox.sum() / num_boxes
+
+        loss_giou = 1 - torch.diag(generalized_box_iou(
+            box_convert(src_boxes, 'cxcywh', 'xyxy'),
+            box_convert(target_boxes, 'cxcywh', 'xyxy')
+        ))
+        losses['loss_giou'] = loss_giou.sum() / num_boxes
+        return losses
+
+    def _get_src_permutation_idx(self, indices):
+        # permute predictions following indices (Fancy indexing)
+        batch_idx = torch.cat([torch.full_like(src, i) for i, (src, _) in enumerate(indices)])
+        src_idx = torch.cat([src for (src, _) in indices])
+        return batch_idx, src_idx
 
 
 class HungarianMatcher(nn.Module):
@@ -74,7 +112,7 @@ class HungarianMatcher(nn.Module):
         :param cost_bbox: The relative weight of the L1 error of the bounding box coordinates in the matching cost
         :param cost_giou: The relative weight of the GIoU loss of the bounding box in the matching cost
         """
-        super().__init__()
+        super(HungarianMatcher, self).__init__()
         self.cost_class = cost_class
         self.cost_bbox = cost_bbox
         self.cost_giou = cost_giou

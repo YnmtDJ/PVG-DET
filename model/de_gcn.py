@@ -9,23 +9,23 @@ class DeGCN(nn.Module):
     """
     End-to-end object detection with graph convolution network and transformer.
     """
-    def __init__(self, max_id, num_queries=100, d_model=192):
+    def __init__(self, num_classes, num_queries=100, d_model=192):
         super(DeGCN, self).__init__()
-        self.vig = ViG()
-        self.query_embed = nn.Parameter(torch.randn(num_queries, 1, d_model))
-        decoder_layer = nn.TransformerDecoderLayer(d_model, 8, 4*d_model)
+        self.vig = ViG(3, d_model)
+        self.query_embed = nn.Parameter(torch.randn(1, num_queries, d_model))
+        decoder_layer = nn.TransformerDecoderLayer(d_model, 8, 4*d_model, batch_first=True)
         self.decoder = nn.TransformerDecoder(decoder_layer, 6, nn.LayerNorm(d_model))
-        self.class_embed = nn.Linear(d_model, max_id + 1)
+        self.class_embed = nn.Linear(d_model, num_classes+1)
         self.bbox_embed = MLP(d_model, d_model, 4, 3)
 
     def forward(self, inputs):
-        x = self.vig(inputs)  # (batch_size, num_dims, height/16, width/16)
-        batch_size, num_dims, _, _ = x.shape
-        x = x.reshape(batch_size, num_dims, -1).permute(2, 0, 1)  # (num_points, batch_size, num_dims)
-        outputs = self.decoder(self.query_embed.repeat(1, batch_size, 1), x)
-        outputs_class = self.class_embed(outputs)
-        outputs_coord = self.bbox_embed(outputs).sigmoid()
-        return {'pred_logits': outputs_class[-1], 'pred_boxes': outputs_coord[-1]}
+        x = self.vig(inputs)  # (batch_size, d_model, height/16, width/16)
+        batch_size, d_model, _, _ = x.shape
+        x = x.reshape(batch_size, d_model, -1).permute(0, 2, 1)  # (batch_size, num_points, d_model)
+        outputs = self.decoder(self.query_embed.repeat(batch_size, 1, 1), x)  # (batch_size, num_queries, d_model)
+        outputs_class = self.class_embed(outputs)  # (batch_size, num_queries, num_classes)
+        outputs_coord = self.bbox_embed(outputs).sigmoid()  # (batch_size, num_queries, 4)
+        return {'pred_logits': outputs_class, 'pred_boxes': outputs_coord}
 
 
 class MLP(nn.Module):
