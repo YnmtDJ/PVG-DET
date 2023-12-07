@@ -1,23 +1,24 @@
+import os
+
 import cv2
 import torch
 import torchvision.datasets
 from torchvision.transforms import v2
 
 
-def create_coco_dataset(root: str, annFile: str, augment: bool):
+def create_coco_dataset(data_root: str, image_set: str):
     """
     Create the coco dataset.
-    :param root: Root directory where images are downloaded to.
-    :param annFile: Path to json annotation file.
-    :param augment: Whether to perform data augmentation.
+    :param data_root: The root directory of coco dataset.
+    :param image_set: The image set, e.g. train, val.
     :return: The torch.utils.data.Dataset().
     """
     normalize = v2.Compose([
-            v2.ToDtype(torch.float32, scale=True),
-            v2.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+        v2.ToDtype(torch.float32, scale=True),
+        v2.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
     ])
 
-    if augment:
+    if image_set == "train":
         transforms = v2.Compose([
             v2.ToImage(),
             v2.RandomHorizontalFlip(),
@@ -26,11 +27,17 @@ def create_coco_dataset(root: str, annFile: str, augment: bool):
             v2.SanitizeBoundingBoxes(),
             normalize
         ])
-    else:
+        root = os.path.join(data_root, "/images/train2017")
+        annFile = os.path.join(data_root, "/annotations/instances_train2017.json")
+    elif image_set == "val":
         transforms = v2.Compose([
             v2.ToImage(),
             normalize
         ])
+        root = os.path.join(data_root, "/images/val2017")
+        annFile = os.path.join(data_root, "/annotations/instances_val2017.json")
+    else:
+        raise ValueError("The image_set must be train or val.")
 
     dataset = torchvision.datasets.CocoDetection(root=root, annFile=annFile, transforms=transforms)
     return torchvision.datasets.wrap_dataset_for_transforms_v2(dataset, target_keys=["boxes", "labels"])
