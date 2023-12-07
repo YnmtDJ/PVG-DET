@@ -13,17 +13,22 @@ class SetCriterion(nn.Module):
       1) we compute hungarian assignment between ground truth boxes and the outputs of the model
       2) we supervise each pair of matched ground-truth / prediction (supervise class and box)
     """
-    def __init__(self, num_classes, eos_coef=0.1):
+    def __init__(self, num_classes, weight_dict=None, no_object_coef=0.1):
         """
         Create the criterion.
         :param num_classes: Number of object categories, omitting the special no-object category
-        :param eos_coef: Relative classification weight applied to the no-object category
+        :param weight_dict: Dict containing as key the names of the losses and as values their relative weight.
+                            (the key include 'loss_ce', 'loss_bbox', 'loss_giou')
+        :param no_object_coef: Relative classification weight applied to the no-object category (object category is 1)
         """
         super(SetCriterion, self).__init__()
+        if weight_dict is None:
+            weight_dict = {"loss_ce": 1, "loss_bbox": 5, "loss_giou": 2}
+            self.weight_dict = weight_dict
         self.num_classes = num_classes
         self.matcher = HungarianMatcher()
         empty_weight = torch.ones(self.num_classes + 1)
-        empty_weight[-1] = eos_coef
+        empty_weight[-1] = no_object_coef
         self.register_buffer('empty_weight', empty_weight)
 
     def forward(self, outputs, targets):
@@ -48,7 +53,8 @@ class SetCriterion(nn.Module):
         losses = {}
         losses.update(self.loss_labels(outputs, targets, indices))
         losses.update(self.loss_boxes(outputs, targets, indices))
-        return losses
+        loss = sum(self.weight_dict[k]*losses[k] for k, v in losses.items() if k in self.weight_dict)
+        return loss
 
     def loss_labels(self, outputs, targets, indices):
         """
