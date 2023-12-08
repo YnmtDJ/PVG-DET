@@ -18,7 +18,7 @@ class SetCriterion(nn.Module):
         Create the criterion.
         :param num_classes: Number of object categories, omitting the special no-object category
         :param weight_dict: Dict containing as key the names of the losses and as values their relative weight.
-                            (the key include 'loss_ce', 'loss_bbox', 'loss_giou')
+                            (default: {"loss_ce": 1, "loss_bbox": 5, "loss_giou": 2})
         :param no_object_coef: Relative classification weight applied to the no-object category (object category is 1)
         """
         super(SetCriterion, self).__init__()
