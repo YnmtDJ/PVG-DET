@@ -54,7 +54,7 @@ class SetCriterion(nn.Module):
         losses.update(self.loss_labels(outputs, targets, indices))
         losses.update(self.loss_boxes(outputs, targets, indices))
         loss = sum(self.weight_dict[k]*losses[k] for k, v in losses.items() if k in self.weight_dict)
-        return loss
+        return loss, losses
 
     def loss_labels(self, outputs, targets, indices):
         """
