@@ -43,7 +43,7 @@ if __name__ == "__main__":
     # get the options
     opts = get_opts()
     checkpoint = None
-    if opts.checkpoint_path is not None:
+    if opts.checkpoint_path is not None and os.path.exists(opts.checkpoint_path):  # continue training
         checkpoint = torch.load(opts.checkpoint_path, map_location='cpu')
         opts = checkpoint['opts']
 
@@ -82,7 +82,7 @@ if __name__ == "__main__":
     start_time = time.time()
     for epoch in range(opts.start_epoch, opts.epochs):
         # train for one epoch
-        train(dataloader_train, model, criterion, optimizer, device, epoch, writer)
+        train_one_epoch(dataloader_train, model, criterion, optimizer, epoch, writer)
         lr_scheduler.step()
 
         # evaluate on the val dataset
@@ -93,12 +93,11 @@ if __name__ == "__main__":
             'model': model.state_dict(),
             'optimizer': optimizer.state_dict(),
             'lr_scheduler': lr_scheduler.state_dict(),
-            'epoch': epoch
+            'epoch': epoch,
+            'opts': opts
         }
-        torch.save(checkpoint, os.path.join(opts.checkpoint_path, "checkpoint_{}.pth".format(epoch)))
+        torch.save(checkpoint, opts.checkpoint_path)
 
-    for i, (images, targets) in enumerate(dataloader_train):
-        outputs = model(images)
 
 
 

@@ -27,25 +27,25 @@ def create_coco_dataset(data_root: str, image_set: str):
             v2.SanitizeBoundingBoxes(),
             normalize
         ])
-        root = os.path.join(data_root, "/images/train2017")
-        annFile = os.path.join(data_root, "/annotations/instances_train2017.json")
+        root = os.path.join(data_root, "images/train2017")
+        annFile = os.path.join(data_root, "annotations/instances_train2017.json")
     elif image_set == "val":
         transforms = v2.Compose([
             v2.ToImage(),
             normalize
         ])
-        root = os.path.join(data_root, "/images/val2017")
-        annFile = os.path.join(data_root, "/annotations/instances_val2017.json")
+        root = os.path.join(data_root, "images/val2017")
+        annFile = os.path.join(data_root, "annotations/instances_val2017.json")
     else:
         raise ValueError("The image_set must be train or val.")
 
     dataset = torchvision.datasets.CocoDetection(root=root, annFile=annFile, transforms=transforms)
-    return torchvision.datasets.wrap_dataset_for_transforms_v2(dataset, target_keys=["boxes", "labels"])
+    return torchvision.datasets.wrap_dataset_for_transforms_v2(dataset, target_keys=["boxes", "labels", "image_id"])
 
 
 if __name__ == "__main__":
     # demo for the create_coco_dataset()
-    test_dataset = create_coco_dataset(root="./COCO/images/val2017", annFile="./COCO/annotations/instances_val2017.json", augment=True)
+    test_dataset = create_coco_dataset("./COCO/", "val")
     image, target = test_dataset[0]
     image = image.permute(1, 2, 0).numpy()
     image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
