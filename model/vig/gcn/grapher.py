@@ -68,10 +68,10 @@ class DyGraphConv2d(nn.Module):
 
     def forward(self, x):
         batch_size, num_dims, height, width = x.shape
-        x = x.reshape(batch_size, num_dims, -1, 1).contiguous()
+        x = x.reshape(batch_size, num_dims, -1, 1)
         edge_index = self.dilated_knn_graph(x)
         x = self.gcn(x, edge_index)
-        return x.reshape(batch_size, -1, height, width).contiguous()
+        return x.reshape(batch_size, -1, height, width)
 
 
 class MRConv2d(nn.Module):
@@ -192,13 +192,13 @@ def batched_index_select(x, idx):
     """
     batch_size, num_dims, num_points = x.shape[:3]
     _, _, k = idx.shape
-    idx_base = torch.arange(0, batch_size, device=idx.device).view(-1, 1, 1) * num_points
+    idx_base = torch.arange(0, batch_size, device=idx.device).reshape(-1, 1, 1) * num_points
     idx = idx + idx_base
-    idx = idx.contiguous().view(-1)
+    idx = idx.reshape(-1)
 
     x = x.transpose(2, 1)
-    feature = x.contiguous().view(batch_size * num_points, -1)[idx, :]
-    feature = feature.view(batch_size, num_points, k, num_dims).permute(0, 3, 1, 2).contiguous()
+    feature = x.reshape(batch_size * num_points, -1)[idx, :]
+    feature = feature.reshape(batch_size, num_points, k, num_dims).permute(0, 3, 1, 2)
     return feature
 
 

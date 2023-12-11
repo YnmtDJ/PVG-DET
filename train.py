@@ -27,7 +27,7 @@ def train_one_epoch(dataloader, model, criterion, optimizer, epoch, writer):
     criterion.train()
     for i, (images, targets) in enumerate(dataloader):
         images = images.to(device)
-        targets = [{k: v.to(device) for k, v in target.items()} for target in targets]
+        targets = [{k: v.to(device) if hasattr(v, 'to') else v for k, v in target.items()} for target in targets]
         outputs = model(images)
         loss, losses = criterion(outputs, targets)
         optimizer.zero_grad()
@@ -49,7 +49,7 @@ if __name__ == "__main__":
 
     # prepare the dataset
     if opts.dataset_name == "COCO":
-        dataset_train = create_coco_dataset(os.path.join(opts.dataset_root, opts.dataset_name), "train")
+        dataset_train = create_coco_dataset(os.path.join(opts.dataset_root, opts.dataset_name), "val")
         dataset_val = create_coco_dataset(os.path.join(opts.dataset_root, opts.dataset_name), "val")
         num_classes = 91  # because the coco dataset max label id is 90, so we set the num_classes to 91
     elif opts.dataset_name == "ImageNet":
@@ -97,8 +97,3 @@ if __name__ == "__main__":
             'opts': opts
         }
         torch.save(checkpoint, opts.checkpoint_path)
-
-
-
-
-

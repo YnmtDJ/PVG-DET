@@ -40,7 +40,7 @@ def create_coco_dataset(data_root: str, image_set: str):
         raise ValueError("The image_set must be train or val.")
 
     dataset = torchvision.datasets.CocoDetection(root=root, annFile=annFile, transforms=transforms)
-    return torchvision.datasets.wrap_dataset_for_transforms_v2(dataset, target_keys=["boxes", "labels", "image_id"])
+    return torchvision.datasets.wrap_dataset_for_transforms_v2(dataset, target_keys=["image_id", "boxes", "labels"])
 
 
 if __name__ == "__main__":

@@ -69,7 +69,7 @@ class SetCriterion(nn.Module):
         idx = self._get_src_permutation_idx(indices)  # (batch_idx, src_idx) Fancy indexing
         target_classes[idx] = target_classes_o
 
-        loss_ce = F.cross_entropy(src_logits, target_classes, self.empty_weight)
+        loss_ce = F.cross_entropy(src_logits.permute(0, 2, 1), target_classes, self.empty_weight)
         losses = {'loss_ce': loss_ce}
         return losses
 
@@ -167,7 +167,7 @@ class HungarianMatcher(nn.Module):
         # Final cost matrix
         # (batch_size * num_queries, num_target_boxes)
         cost = self.cost_bbox * cost_bbox + self.cost_class * cost_class + self.cost_giou * cost_giou
-        cost = cost.view(batch_size, num_queries, -1).cpu()  # (batch_size, num_queries, num_target_boxes)
+        cost = cost.reshape(batch_size, num_queries, -1).cpu()  # (batch_size, num_queries, num_target_boxes)
 
         # Split the cost matrix to get the result of match in each image
         sizes = [len(target["boxes"]) for target in targets]
