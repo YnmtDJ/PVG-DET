@@ -26,6 +26,7 @@ def train_one_epoch(dataloader, model, criterion, optimizer, epoch, writer):
     model.train()
     criterion.train()
     for i, (images, targets) in enumerate(dataloader):
+        start_time = time.time()
         images = images.to(device)
         targets = [{k: v.to(device) if hasattr(v, 'to') else v for k, v in target.items()} for target in targets]
         outputs = model(images)
@@ -37,6 +38,8 @@ def train_one_epoch(dataloader, model, criterion, optimizer, epoch, writer):
         writer.add_scalar("train/loss_ce", losses['loss_ce'].item(), epoch * len(dataloader) + i)
         writer.add_scalar("train/loss_bbox", losses['loss_bbox'].item(), epoch * len(dataloader) + i)
         writer.add_scalar("train/loss_giou", losses['loss_giou'].item(), epoch * len(dataloader) + i)
+        end_time = time.time()
+        print("one iteration time: {:.2f}s".format(end_time - start_time))
 
 
 if __name__ == "__main__":
@@ -49,7 +52,7 @@ if __name__ == "__main__":
 
     # prepare the dataset
     if opts.dataset_name == "COCO":
-        dataset_train = create_coco_dataset(os.path.join(opts.dataset_root, opts.dataset_name), "val")
+        dataset_train = create_coco_dataset(os.path.join(opts.dataset_root, opts.dataset_name), "train")
         dataset_val = create_coco_dataset(os.path.join(opts.dataset_root, opts.dataset_name), "val")
         num_classes = 91  # because the coco dataset max label id is 90, so we set the num_classes to 91
     elif opts.dataset_name == "ImageNet":

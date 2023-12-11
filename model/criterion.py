@@ -62,14 +62,15 @@ class SetCriterion(nn.Module):
         Targets dicts must contain the key "labels" containing a tensor of dim [nb_target_boxes]
         """
         assert 'pred_logits' in outputs
+        device = outputs['pred_logits'].device
         src_logits = outputs['pred_logits']  # (batch_size, num_queries, num_classes+1)
 
         target_classes_o = torch.cat([target["labels"][index_j] for target, (_, index_j) in zip(targets, indices)])
-        target_classes = torch.full(src_logits.shape[:2], self.num_classes, dtype=torch.int64, device=src_logits.device)
+        target_classes = torch.full(src_logits.shape[:2], self.num_classes, dtype=torch.int64, device=device)
         idx = self._get_src_permutation_idx(indices)  # (batch_idx, src_idx) Fancy indexing
         target_classes[idx] = target_classes_o
 
-        loss_ce = F.cross_entropy(src_logits.permute(0, 2, 1), target_classes, self.empty_weight)
+        loss_ce = F.cross_entropy(src_logits.permute(0, 2, 1), target_classes, self.empty_weight.to(device))
         losses = {'loss_ce': loss_ce}
         return losses
 
@@ -80,12 +81,13 @@ class SetCriterion(nn.Module):
         The target boxes are expected in format (center_x, center_y, width, height).
         """
         assert 'pred_boxes' in outputs
+        device = outputs['pred_boxes'].device
         idx = self._get_src_permutation_idx(indices)  # (batch_idx, src_idx) Fancy indexing
         src_boxes = outputs['pred_boxes'][idx]  # (num_target_boxes, 4)
         target_boxes = []
         for target, (_, index_j) in zip(targets, indices):  # notice that the target boxes must be normalized
             height, width = target["boxes"].canvas_size
-            target_boxes.append(target["boxes"][index_j]/torch.tensor([width, height, width, height]))
+            target_boxes.append(target["boxes"][index_j]/torch.tensor([width, height, width, height], device=device))
         target_boxes = torch.cat(target_boxes, dim=0)  # (num_target_boxes, 4)
         num_boxes = target_boxes.shape[0]
 
@@ -145,6 +147,7 @@ class HungarianMatcher(nn.Module):
                 For each batch element, it holds:
                     len(index_i) = len(index_j) = min(num_queries, num_target_boxes)
         """
+        device = outputs["pred_logits"].device
         batch_size, num_queries, _ = outputs["pred_logits"].shape
 
         # We flatten to compute the cost matrices in a batch
@@ -156,7 +159,7 @@ class HungarianMatcher(nn.Module):
         tgt_bbox = []
         for target in targets:
             height, width = target["boxes"].canvas_size  # image size
-            tgt_bbox.append(target["boxes"]/torch.tensor([width, height, width, height]))
+            tgt_bbox.append(target["boxes"]/torch.tensor([width, height, width, height], device=device))
         tgt_bbox = torch.cat(tgt_bbox)
 
         # Compute the classification cost. Contrary to the loss, we don't use the NLL,
