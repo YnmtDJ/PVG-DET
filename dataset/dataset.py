@@ -24,6 +24,7 @@ def create_coco_dataset(data_root: str, image_set: str):
             v2.RandomHorizontalFlip(),
             v2.RandomIoUCrop(),
             v2.RandomResize(224, 400, antialias=True),
+            v2.ConvertBoundingBoxFormat("CXCYWH"),
             v2.SanitizeBoundingBoxes(),
             normalize
         ])

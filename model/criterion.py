@@ -77,12 +77,16 @@ class SetCriterion(nn.Module):
         """
         Compute the losses related to the bounding boxes, the L1 regression loss and the GIoU loss
         Targets dicts must contain the key "boxes" containing a tensor of dim [nb_target_boxes, 4]
-        The target boxes are expected in format (center_x, center_y, width, height), normalized by the image size.
+        The target boxes are expected in format (center_x, center_y, width, height).
         """
         assert 'pred_boxes' in outputs
         idx = self._get_src_permutation_idx(indices)  # (batch_idx, src_idx) Fancy indexing
         src_boxes = outputs['pred_boxes'][idx]  # (num_target_boxes, 4)
-        target_boxes = torch.cat([target['boxes'][index_j] for target, (_, index_j) in zip(targets, indices)], dim=0)
+        target_boxes = []
+        for target, (_, index_j) in zip(targets, indices):  # notice that the target boxes must be normalized
+            height, width = target["boxes"].canvas_size
+            target_boxes.append(target["boxes"][index_j]/torch.tensor([width, height, width, height]))
+        target_boxes = torch.cat(target_boxes, dim=0)  # (num_target_boxes, 4)
         num_boxes = target_boxes.shape[0]
 
         losses = {}
@@ -147,9 +151,13 @@ class HungarianMatcher(nn.Module):
         out_prob = outputs["pred_logits"].flatten(0, 1).softmax(-1)  # (batch_size * num_queries, num_classes)
         out_bbox = outputs["pred_boxes"].flatten(0, 1)  # (batch_size * num_queries, 4)
 
-        # Also concat the target labels and boxes
+        # Also concat the target labels and boxes (normalized by the image size)
         tgt_ids = torch.cat([target["labels"] for target in targets])
-        tgt_bbox = torch.cat([target["boxes"] for target in targets])
+        tgt_bbox = []
+        for target in targets:
+            height, width = target["boxes"].canvas_size  # image size
+            tgt_bbox.append(target["boxes"]/torch.tensor([width, height, width, height]))
+        tgt_bbox = torch.cat(tgt_bbox)
 
         # Compute the classification cost. Contrary to the loss, we don't use the NLL,
         # but approximate it in 1 - proba[target class].
@@ -171,5 +179,5 @@ class HungarianMatcher(nn.Module):
 
         # Split the cost matrix to get the result of match in each image
         sizes = [len(target["boxes"]) for target in targets]
-        indices = [linear_sum_assignment(c[i]) for i, c in enumerate(cost.split(sizes, -1))]
+        indices = [linear_sum_assignment(c[i]) for i, c in enumerate(cost.split(sizes, dim=-1))]
         return [(torch.as_tensor(i, dtype=torch.int64), torch.as_tensor(j, dtype=torch.int64)) for i, j in indices]
