@@ -33,6 +33,7 @@ def create_coco_dataset(data_root: str, image_set: str):
     elif image_set == "val":
         transforms = v2.Compose([
             v2.ToImage(),
+            v2.ConvertBoundingBoxFormat("CXCYWH"),
             normalize
         ])
         root = os.path.join(data_root, "images/val2017")
