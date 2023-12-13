@@ -55,8 +55,13 @@ if __name__ == "__main__":
     for i in range(len(target['boxes'])):
         bbox = target['boxes'][i]
         label = target['labels'][i]
+        center_x = int(bbox[0])
+        center_y = int(bbox[1])
+        width = int(bbox[2])
+        height = int(bbox[3])
         print(label)
-        cv2.rectangle(image, (int(bbox[0]), int(bbox[1])), (int(bbox[2]), int(bbox[3])), (0, 0, 255))
+        cv2.rectangle(image, (center_x-width//2, center_y-height//2), (center_x+width//2, center_y+height//2),
+                      (0, 0, 255))
 
     cv2.imshow("demo", image)
     cv2.waitKey()
