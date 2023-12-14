@@ -5,7 +5,7 @@ def get_opts():
     parser = argparse.ArgumentParser(description="GCN_DETECTION")
 
     # dataset parameters
-    parser.add_argument("--dataset_root", type=str, default="dataset", help="the root directory of dataset")
+    parser.add_argument("--dataset_root", type=str, default="dataset", help="root directory of all datasets")
     parser.add_argument("--dataset_name", type=str, default="COCO", help="select the dataset to use")
 
     # model parameters

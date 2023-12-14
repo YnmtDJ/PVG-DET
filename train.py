@@ -5,7 +5,7 @@ import torch
 from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
 
-from dataset.datasets import create_coco_dataset
+from dataset.datasets import create_coco_dataset, create_dataset
 from model.criterion import SetCriterion
 from model.de_gcn import DeGCN
 from util.misc import collate_fn
@@ -51,15 +51,12 @@ if __name__ == "__main__":
         opts = checkpoint['opts']
 
     # prepare the dataset
+    dataset_train, dataset_val = create_dataset(opts.dataset_root, opts.dataset_name)
     if opts.dataset_name == "COCO":
-        dataset_train = create_coco_dataset(os.path.join(opts.dataset_root, opts.dataset_name), "train")
-        dataset_val = create_coco_dataset(os.path.join(opts.dataset_root, opts.dataset_name), "val")
         num_classes = 91  # because the coco dataset max label id is 90, so we set the num_classes to 91
     elif opts.dataset_name == "ImageNet":
         raise NotImplementedError("ImageNet dataset is not implemented yet.")
     else:
-        dataset_train = None
-        dataset_val = None
         num_classes = 20  # default num_classes
     dataloader_train = DataLoader(dataset_train, batch_size=opts.batch_size, shuffle=True, drop_last=False,
                                   collate_fn=collate_fn)
@@ -85,7 +82,7 @@ if __name__ == "__main__":
     start_time = time.time()
     for epoch in range(opts.start_epoch, opts.epochs):
         # train for one epoch
-        train_one_epoch(dataloader_val, model, criterion, optimizer, epoch, writer)
+        train_one_epoch(dataloader_train, model, criterion, optimizer, epoch, writer)
         lr_scheduler.step()
 
         # evaluate on the val dataset
