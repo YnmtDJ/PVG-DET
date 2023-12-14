@@ -160,6 +160,5 @@ cython_debug/
 #.idea/
 
 # dataset
-dataset/
-!dataset/dataset.py
-!dataset/transforms.py
+dataset/COCO/
+dataset/ImageNet/
