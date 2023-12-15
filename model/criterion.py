@@ -65,9 +65,7 @@ class SetCriterion(nn.Module):
         device = outputs['pred_logits'].device
         src_logits = outputs['pred_logits']  # (batch_size, num_queries, num_classes+1)
 
-        target_classes_o = torch.cat([target["labels"][index_j] if "labels" in target
-                                      else torch.empty(0, dtype=torch.int64).to(device)
-                                      for target, (_, index_j) in zip(targets, indices)])
+        target_classes_o = torch.cat([target["labels"][index_j] for target, (_, index_j) in zip(targets, indices)])
         target_classes = torch.full(src_logits.shape[:2], self.num_classes, dtype=torch.int64, device=device)
         idx = self._get_src_permutation_idx(indices)  # (batch_idx, src_idx) Fancy indexing
         target_classes[idx] = target_classes_o
@@ -157,15 +155,11 @@ class HungarianMatcher(nn.Module):
         out_bbox = outputs["pred_boxes"].flatten(0, 1)  # (batch_size * num_queries, 4)
 
         # Also concat the target labels and boxes (normalized by the image size)
-        tgt_ids = torch.cat([target["labels"] if "labels" in target else torch.empty(0, dtype=torch.int64).to(device)
-                             for target in targets])
+        tgt_ids = torch.cat([target["labels"] for target in targets])
         tgt_bbox = []
         for target in targets:
-            if "boxes" in target:
-                height, width = target["boxes"].canvas_size  # image size
-                tgt_bbox.append(target["boxes"]/torch.tensor([width, height, width, height]).to(device))
-            else:
-                tgt_bbox.append(torch.empty([0, 4], dtype=torch.int64).to(device))
+            height, width = target["boxes"].canvas_size  # image size
+            tgt_bbox.append(target["boxes"]/torch.tensor([width, height, width, height]).to(device))
         tgt_bbox = torch.cat(tgt_bbox)
 
         # Compute the classification cost. Contrary to the loss, we don't use the NLL,
@@ -187,6 +181,6 @@ class HungarianMatcher(nn.Module):
         cost = cost.reshape(batch_size, num_queries, -1).cpu()  # (batch_size, num_queries, num_target_boxes)
 
         # Split the cost matrix to get the result of match in each image
-        sizes = [len(target["boxes"]) if "boxes" in target else 0 for target in targets]
+        sizes = [len(target["boxes"]) for target in targets]
         indices = [linear_sum_assignment(c[i]) for i, c in enumerate(cost.split(sizes, dim=-1))]
         return [(torch.as_tensor(i, dtype=torch.int64), torch.as_tensor(j, dtype=torch.int64)) for i, j in indices]

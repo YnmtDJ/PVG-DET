@@ -27,17 +27,17 @@ def train_one_epoch(dataloader, model, criterion, optimizer, epoch, writer):
     criterion.train()
     for i, (images, targets) in enumerate(dataloader):
         start_time = time.time()
-        # images = images.to(device)
-        # targets = [{k: v.to(device) if hasattr(v, 'to') else v for k, v in target.items()} for target in targets]
-        # outputs = model(images)
-        # loss, losses = criterion(outputs, targets)
-        # optimizer.zero_grad()
-        # loss.backward()
-        # optimizer.step()
-        # writer.add_scalar("train/loss", loss.item(), epoch * len(dataloader) + i)
-        # writer.add_scalar("train/loss_ce", losses['loss_ce'].item(), epoch * len(dataloader) + i)
-        # writer.add_scalar("train/loss_bbox", losses['loss_bbox'].item(), epoch * len(dataloader) + i)
-        # writer.add_scalar("train/loss_giou", losses['loss_giou'].item(), epoch * len(dataloader) + i)
+        images = images.to(device)
+        targets = [{k: v.to(device) if hasattr(v, 'to') else v for k, v in target.items()} for target in targets]
+        outputs = model(images)
+        loss, losses = criterion(outputs, targets)
+        optimizer.zero_grad()
+        loss.backward()
+        optimizer.step()
+        writer.add_scalar("train/loss", loss.item(), epoch * len(dataloader) + i)
+        writer.add_scalar("train/loss_ce", losses['loss_ce'].item(), epoch * len(dataloader) + i)
+        writer.add_scalar("train/loss_bbox", losses['loss_bbox'].item(), epoch * len(dataloader) + i)
+        writer.add_scalar("train/loss_giou", losses['loss_giou'].item(), epoch * len(dataloader) + i)
         end_time = time.time()
         print("one iteration time: {:.2f}s".format(end_time - start_time))
 
