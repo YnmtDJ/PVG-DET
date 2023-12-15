@@ -5,8 +5,8 @@ import torch
 import torchvision
 import torchvision.transforms.v2.functional as F
 from torchvision import tv_tensors
-from torchvision.transforms import v2
 
+from dataset.transforms import create_transform
 from util.misc import list_of_dicts_to_dict_of_lists
 
 
@@ -36,26 +36,14 @@ def create_coco_dataset(data_root: str, image_set: str):
     :param image_set: The image set, e.g. train, val.
     :return: The torch.utils.data.Dataset().
     """
-    normalize = v2.Compose([
-        v2.ToDtype(torch.float32, scale=True),
-        v2.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
-    ])
+    transform_train, transform_val = create_transform()
+
     if image_set == "train":
-        transforms = v2.Compose([
-            v2.ToImage(),
-            v2.RandomHorizontalFlip(),
-            v2.RandomIoUCrop(),
-            v2.RandomResize(224, 400, antialias=True),
-            v2.SanitizeBoundingBoxes(),
-            normalize
-        ])
+        transforms = transform_train
         root = os.path.join(data_root, "images/train2017")
         annFile = os.path.join(data_root, "annotations/instances_train2017.json")
     elif image_set == "val":
-        transforms = v2.Compose([
-            v2.ToImage(),
-            normalize
-        ])
+        transforms = transform_val
         root = os.path.join(data_root, "images/val2017")
         annFile = os.path.join(data_root, "annotations/instances_val2017.json")
     else:
@@ -69,7 +57,7 @@ class CocoDetection(torchvision.datasets.CocoDetection):
     Referring to the pytorch CocoDetection implementation, the difference is that
     when there are no objects in the image, empty boxes and labels are still returned.
     """
-    def __init__(self, root, annFile, transforms: None):
+    def __init__(self, root, annFile, transforms=None):
         super(CocoDetection, self).__init__(root, annFile)
         self._transforms = transforms
 
@@ -119,7 +107,7 @@ class CocoDetection(torchvision.datasets.CocoDetection):
 if __name__ == "__main__":
     # demo for the create_dataset()
     dataset_train, dataset_val = create_dataset("./", "COCO")
-    image, target = dataset_val[0]
+    image, target = dataset_train[0]
     image = image.permute(1, 2, 0).numpy()
     image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
 
