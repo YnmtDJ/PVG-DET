@@ -18,10 +18,9 @@ def get_opts():
     parser.add_argument('--weight_decay', type=float, default=1e-4, help="optimizer weight decay")
     parser.add_argument('--lr_drop', type=int, default=200, help="learning rate decay step")
     parser.add_argument('--device', type=str, default='cuda', help='device to use for training / testing')
-    parser.add_argument('--checkpoint_path', type=str, required=True, help="the path to save the checkpoint. "
-                                                                           "if checkpoint file exists, "
-                                                                           "continue training from the checkpoint and "
-                                                                           "ignore some command-line parameters.")
+    parser.add_argument('--checkpoint_path', type=str, required=True, help="the path to save the checkpoint.")
+    parser.add_argument('--resume', type=str, help="the path to the checkpoint to resume training from, "
+                                                   "this will ignore some command-line parameters")
     parser.add_argument('--log_dir', type=str, required=True, help="the directory to save the log file")
 
     return parser.parse_args()

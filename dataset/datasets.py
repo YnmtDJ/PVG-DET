@@ -23,8 +23,7 @@ def create_dataset(dataset_root: str, dataset_name: str):
     elif dataset_name == "ImageNet":
         raise NotImplementedError("ImageNet dataset is not implemented yet.")
     else:
-        dataset_train = None
-        dataset_val = None
+        raise ValueError("Unknown dataset name.")
 
     return dataset_train, dataset_val
 

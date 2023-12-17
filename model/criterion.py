@@ -86,7 +86,7 @@ class SetCriterion(nn.Module):
         src_boxes = outputs['pred_boxes'][idx]  # (num_target_boxes, 4)
         target_boxes = []
         for target, (_, index_j) in zip(targets, indices):  # notice that the target boxes must be normalized
-            height, width = target["boxes"].canvas_size
+            height, width = target["boxes"].canvas_size  # image size
             target_boxes.append(target["boxes"][index_j]/torch.tensor([width, height, width, height], device=device))
         target_boxes = torch.cat(target_boxes, dim=0)  # (num_target_boxes, 4)
         num_boxes = target_boxes.shape[0]
