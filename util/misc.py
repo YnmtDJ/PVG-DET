@@ -1,5 +1,6 @@
 from collections import defaultdict
 
+import cv2
 import torch
 from torchvision.transforms import v2
 
@@ -31,3 +32,29 @@ def list_of_dicts_to_dict_of_lists(list_of_dicts):
         for key, value in dct.items():
             dict_of_lists[key].append(value)
     return dict(dict_of_lists)
+
+
+def show_image(image, target):
+    """
+    Show the image with bounding boxes.
+    :param image: The image.
+    :param target: The target in the image.
+    """
+    image = image.permute(1, 2, 0).numpy()
+    image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
+
+    for i in range(len(target['boxes'])):
+        bbox = target['boxes'][i]
+        label = target['labels'][i]
+        center_x = int(bbox[0])
+        center_y = int(bbox[1])
+        width = int(bbox[2])
+        height = int(bbox[3])
+        cv2.putText(image, str(label.item()), (center_x, center_y), cv2.FONT_HERSHEY_SIMPLEX, 1,
+                    (0, 0, 255))
+        cv2.rectangle(image, (center_x - width // 2, center_y - height // 2),
+                      (center_x + width // 2, center_y + height // 2),
+                      (0, 0, 255))
+
+    cv2.imshow("demo", image)
+    cv2.waitKey()

@@ -12,8 +12,7 @@ from util.misc import collate_fn
 from util.option import get_opts
 
 if __name__ == "__main__":
-    # get the options
-    opts = get_opts()
+    opts = get_opts()  # get the options
     checkpoint = None
     if opts.resume is not None:  # continue training
         checkpoint = torch.load(opts.resume, map_location='cpu')
@@ -49,6 +48,9 @@ if __name__ == "__main__":
         # evaluate on the val dataset
         evaluate_coco(model, dataloader_val)
 
+        cur_time = time.time()
+        print("Epoch: {}, Time: {}s".format(epoch, cur_time - start_time))
+
         # save the checkpoint
         checkpoint = {
             'model': model.state_dict(),
@@ -58,3 +60,5 @@ if __name__ == "__main__":
             'opts': opts
         }
         torch.save(checkpoint, opts.checkpoint_path)
+        cur_time = time.time()
+        print("Epoch: {}, Time: {}s".format(epoch, cur_time - start_time))

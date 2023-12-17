@@ -7,7 +7,7 @@ import torchvision.transforms.v2.functional as F
 from torchvision import tv_tensors
 
 from dataset.transforms import create_transform
-from util.misc import list_of_dicts_to_dict_of_lists
+from util.misc import list_of_dicts_to_dict_of_lists, show_image
 
 
 def create_dataset(dataset_root: str, dataset_name: str):
@@ -107,20 +107,4 @@ if __name__ == "__main__":
     # demo for the create_dataset()
     dataset_train, dataset_val = create_dataset("./", "COCO")
     image, target = dataset_train[0]
-    image = image.permute(1, 2, 0).numpy()
-    image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
-
-    for i in range(len(target['boxes'])):
-        bbox = target['boxes'][i]
-        label = target['labels'][i]
-        center_x = int(bbox[0])
-        center_y = int(bbox[1])
-        width = int(bbox[2])
-        height = int(bbox[3])
-        print(label)
-        cv2.rectangle(image, (center_x-width//2, center_y-height//2), (center_x+width//2, center_y+height//2),
-                      (0, 0, 255))
-
-    cv2.imshow("demo", image)
-    cv2.waitKey()
-
+    show_image(image, target)
