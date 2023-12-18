@@ -58,3 +58,16 @@ def show_image(image, target):
 
     cv2.imshow("demo", image)
     cv2.waitKey()
+
+
+def override_options(opts, checkpoint):
+    """
+    Override the options with the checkpoint.
+    :param opts: The options.
+    :param checkpoint: The checkpoint.
+    :return:
+    """
+    # the keys need to be overridden
+    keys = {'dataset_root', 'dataset_name', 'batch_size', 'epochs', 'lr', 'weight_decay', 'lr_drop', 'log_dir'}
+    for key in keys:
+        opts[key] = checkpoint['opts'][key]

@@ -20,7 +20,7 @@ def get_opts():
     parser.add_argument('--device', type=str, default='cuda', help='device to use for training / testing')
     parser.add_argument('--checkpoint_path', type=str, required=True, help="the path to save the checkpoint.")
     parser.add_argument('--resume', type=str, help="the path to the checkpoint to resume training from, "
-                                                   "this will ignore some command-line parameters")
+                                                   "this will override some command-line parameters")
     parser.add_argument('--log_dir', type=str, required=True, help="the directory to save the log file")
 
     return parser.parse_args()
