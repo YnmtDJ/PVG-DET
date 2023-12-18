@@ -165,3 +165,6 @@ dataset/ImageNet/
 
 # log
 log/
+
+# checkpoint
+checkpoint/

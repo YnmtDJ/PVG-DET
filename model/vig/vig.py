@@ -28,7 +28,7 @@ class ViG(nn.Module):
         self.n_blocks = n_blocks
 
         self.stem = Stem(in_ch, out_ch, act)
-        self.pos_embed = nn.Parameter(torch.zeros(1, out_ch, max_size[0]//16, max_size[1]//16))
+        self.pos_embed = PositionEmbedding2d()
 
         drop_probs = [x.item() for x in torch.linspace(0, drop_prob, n_blocks)]  # stochastic depth decay rule
         n_knn = [int(x.item()) for x in torch.linspace(k, 2*k, n_blocks)]  # number of neighbors
@@ -55,7 +55,7 @@ class ViG(nn.Module):
 
     def forward(self, inputs):
         x = self.stem(inputs)  # (batch_size, out_ch, height/16, width/16)
-        x = x + self.pos_embed[:, :, :x.shape[2], :x.shape[3]]
+        x = self.pos_embed(x)  # (batch_size, out_ch, height/16, width/16)
         for i in range(self.n_blocks):
             x = self.backbone[i](x)  # (batch_size, out_ch, height/16, width/16)
         return x
@@ -103,6 +103,40 @@ class Stem(nn.Module):
     def forward(self, x):
         x = self.stem(x)  # (batch_size, out_ch, height/16, width/16)
         return x
+
+
+class PositionEmbedding2d(nn.Module):
+    """
+    2D Position Embedding using Sine and Cosine functions.
+    """
+    def __init__(self):
+        super(PositionEmbedding2d, self).__init__()
+
+    def forward(self, x):
+        batch_size, d_model, height, width = x.shape
+        device = x.device
+        assert d_model % 4 == 0
+        embed_h = self.get_1d_pos_embedding(d_model // 2, height).to(device)  # (d_model/2, height)
+        embed_w = self.get_1d_pos_embedding(d_model // 2, width).to(device)  # (d_model/2, width)
+        # (batch_size, d_model/2, height, width)
+        embed_h = embed_h.unsqueeze(0).unsqueeze(-1).repeat(batch_size, 1, 1, width)
+        embed_w = embed_w.unsqueeze(0).unsqueeze(2).repeat(batch_size, 1, height, 1)
+        pos_embedding = torch.cat([embed_h, embed_w], dim=1)  # (batch_size, d_model, height, width)
+        return pos_embedding + x
+
+    def get_1d_pos_embedding(self, d_model, seq_len):
+        """
+        :param d_model: The hidden dimension.
+        :param seq_len: The length of the sequence.
+        """
+        pos = torch.arange(seq_len, dtype=torch.float32)
+        i = torch.arange(d_model // 2, dtype=torch.float32)
+        freq = 1 / (10000 ** (2 * i / d_model))
+        position = torch.einsum("i,j->ij", freq, pos)  # (d_model/2, seq_len)
+        pos_embedding = torch.zeros([d_model, seq_len])  # (d_model, seq_len)
+        pos_embedding[0::2, :] = torch.sin(position)
+        pos_embedding[1::2, :] = torch.cos(position)
+        return pos_embedding
 
 
 class FFN(nn.Module):

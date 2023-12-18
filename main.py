@@ -1,3 +1,4 @@
+import os
 import time
 
 import torch
@@ -46,10 +47,7 @@ if __name__ == "__main__":
         lr_scheduler.step()
 
         # evaluate on the val dataset
-        evaluate_coco(model, dataloader_val)
-
-        cur_time = time.time()
-        print("Epoch: {}, Time: {}s".format(epoch, cur_time - start_time))
+        evaluate_coco(model, criterion, dataloader_val, epoch, writer)
 
         # save the checkpoint
         checkpoint = {
@@ -59,6 +57,6 @@ if __name__ == "__main__":
             'epoch': epoch,
             'opts': opts
         }
+        if not os.path.exists(os.path.dirname(opts.checkpoint_path)):  # check if the parent directory exists
+            os.mkdir(os.path.dirname(opts.checkpoint_path))
         torch.save(checkpoint, opts.checkpoint_path)
-        cur_time = time.time()
-        print("Epoch: {}, Time: {}s".format(epoch, cur_time - start_time))

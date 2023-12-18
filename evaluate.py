@@ -78,6 +78,10 @@ def evaluate_coco(model, criterion, dataloader, epoch, writer):
                 ]
             )
 
+    if len(results) == 0:  # model does not detect any object
+        print("epoch: {}, evaluate coco, model does not detect any object.".format(epoch))
+        return
+
     # evaluate the results
     coco_gt = dataloader.dataset.coco
     coco_dt = coco_gt.loadRes(results)
@@ -85,7 +89,7 @@ def evaluate_coco(model, criterion, dataloader, epoch, writer):
     coco_eval.evaluate()
     coco_eval.accumulate()
     coco_eval.summarize()
-    ap, ap50, ap75, aps, apm, apl, _, _, _, _, _, _ = coco_eval.stats[0]
+    ap, ap50, ap75, aps, apm, apl, _, _, _, _, _, _ = coco_eval.stats
 
     # write results to tensorboard
     writer.add_scalar("val/AP", ap, epoch)
