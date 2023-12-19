@@ -1,4 +1,3 @@
-import os
 import time
 
 import torch
@@ -9,7 +8,7 @@ from dataset.datasets import create_dataset
 from evaluate import evaluate_coco
 from model import build
 from train import train_one_epoch
-from util.misc import collate_fn, override_options
+from util.misc import collate_fn, override_options, save_checkpoint
 from util.option import get_opts
 
 if __name__ == "__main__":
@@ -17,7 +16,7 @@ if __name__ == "__main__":
     checkpoint = None
     if opts.resume is not None:  # continue training
         checkpoint = torch.load(opts.resume, map_location='cpu')
-        override_options(opts, checkpoint['opts'])  # override some options with the checkpoint
+        override_options(opts, checkpoint)  # override some options with the checkpoint
 
     # prepare the dataset
     dataset_train, dataset_val = create_dataset(opts.dataset_root, opts.dataset_name)
@@ -40,40 +39,22 @@ if __name__ == "__main__":
         opts.start_epoch = checkpoint['epoch'] + 1
 
     print("Start training...")
-    try:
-        for epoch in range(opts.start_epoch, opts.epochs):
-            start_time = time.time()
+    for epoch in range(opts.start_epoch, opts.epochs):
+        print("epoch {} start...".format(epoch))
+        start_time = time.time()
+        try:
             # train for one epoch
             train_one_epoch(model, criterion, dataloader_train, optimizer, epoch, writer)
-            lr_scheduler.step()
+            lr_scheduler.step()  # update the learning rate
 
             # evaluate on the val dataset
             evaluate_coco(model, criterion, dataloader_val, epoch, writer)
 
+        except Exception as e:
+            raise e
+
+        finally:
             # save the checkpoint
-            checkpoint = {
-                'model': model.state_dict(),
-                'optimizer': optimizer.state_dict(),
-                'lr_scheduler': lr_scheduler.state_dict(),
-                'epoch': epoch,
-                'opts': opts
-            }
-            if not os.path.exists(os.path.dirname(opts.checkpoint_path)):  # check if the parent directory exists
-                os.mkdir(os.path.dirname(opts.checkpoint_path))
-            torch.save(checkpoint, opts.checkpoint_path)
+            save_checkpoint(opts, model, optimizer, lr_scheduler, epoch)
             end_time = time.time()
-            print("epoch {} cost: {}s".format(epoch, end_time-start_time))
-    except Exception as e:
-        raise e
-    finally:
-        # save the checkpoint
-        checkpoint = {
-            'model': model.state_dict(),
-            'optimizer': optimizer.state_dict(),
-            'lr_scheduler': lr_scheduler.state_dict(),
-            'epoch': 0,
-            'opts': opts
-        }
-        if not os.path.exists(os.path.dirname(opts.checkpoint_path)):  # check if the parent directory exists
-            os.mkdir(os.path.dirname(opts.checkpoint_path))
-        torch.save(checkpoint, opts.checkpoint_path)
+            print("epoch {} cost: {}s".format(epoch, end_time - start_time))

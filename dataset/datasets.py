@@ -1,6 +1,5 @@
 import os
 
-import cv2
 import torch
 import torchvision
 import torchvision.transforms.v2.functional as F

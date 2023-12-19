@@ -1,3 +1,4 @@
+import os
 from collections import defaultdict
 
 import cv2
@@ -70,4 +71,25 @@ def override_options(opts, checkpoint):
     # the keys need to be overridden
     keys = {'dataset_root', 'dataset_name', 'batch_size', 'epochs', 'lr', 'weight_decay', 'lr_drop', 'log_dir'}
     for key in keys:
-        opts[key] = checkpoint['opts'][key]
+        setattr(opts, key, getattr(checkpoint['opts'], key))
+
+
+def save_checkpoint(opts, model, optimizer, lr_scheduler, epoch):
+    """
+    Save the checkpoint
+    :param opts: The options.
+    :param model: The model.
+    :param optimizer: The optimizer.
+    :param lr_scheduler: The learning rate scheduler.
+    :param epoch: The current epoch.
+    """
+    checkpoint = {
+        'model': model.state_dict(),
+        'optimizer': optimizer.state_dict(),
+        'lr_scheduler': lr_scheduler.state_dict(),
+        'epoch': epoch,
+        'opts': opts
+    }
+    if not os.path.exists(os.path.dirname(opts.checkpoint_path)):  # check if the parent directory exists
+        os.mkdir(os.path.dirname(opts.checkpoint_path))
+    torch.save(checkpoint, opts.checkpoint_path)
