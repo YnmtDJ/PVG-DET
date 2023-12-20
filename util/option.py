@@ -12,7 +12,7 @@ def get_opts():
 
     # training parameters
     parser.add_argument("--batch_size", type=int, default=8, help="batch size")
-    parser.add_argument('--epochs', type=int, default=100, help="number of training epochs")
+    parser.add_argument('--epochs', type=int, default=300, help="number of training epochs")
     parser.add_argument("--start_epoch", type=int, default=0, help='start epoch')
     parser.add_argument('--lr', type=float, default=1e-4, help="learning rate")
     parser.add_argument('--weight_decay', type=float, default=1e-4, help="optimizer weight decay")
