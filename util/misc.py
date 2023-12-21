@@ -91,5 +91,5 @@ def save_checkpoint(opts, model, optimizer, lr_scheduler, epoch):
         'opts': opts
     }
     if not os.path.exists(os.path.dirname(opts.checkpoint_path)):  # check if the parent directory exists
-        os.mkdir(os.path.dirname(opts.checkpoint_path))
+        os.makedirs(os.path.dirname(opts.checkpoint_path))
     torch.save(checkpoint, opts.checkpoint_path)
