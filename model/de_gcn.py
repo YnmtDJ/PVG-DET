@@ -30,7 +30,7 @@ class DeGCN(nn.Module):
         :return: It returns a dict with the following elements:
                 "pred_logits": The classification logits (including no-object) for all queries.
                 "pred_boxes": The normalized boxes coordinates for all queries, represented as
-                            (center_x, center_y, height, width). These values are normalized in [0, 1],
+                            (center_x, center_y, width, height). These values are normalized in [0, 1],
                             relative to the size of each individual image (disregarding possible padding).
                             See PostProcess for information on how to retrieve the non-normalization bounding box. TODO
         """
