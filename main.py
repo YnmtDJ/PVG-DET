@@ -5,7 +5,7 @@ from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
 
 from dataset.datasets import create_dataset
-from evaluate import evaluate_coco
+from evaluate import evaluate
 from model import build
 from train import train_one_epoch
 from util.misc import collate_fn, override_options, save_checkpoint
@@ -48,7 +48,7 @@ if __name__ == "__main__":
             lr_scheduler.step()  # update the learning rate
 
             # evaluate on the val dataset
-            evaluate_coco(model, criterion, dataloader_val, epoch, writer)
+            evaluate(opts.dataset_name, model, criterion, dataloader_val, epoch, writer)
 
         except Exception as e:
             raise e
