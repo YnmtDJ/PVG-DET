@@ -39,6 +39,7 @@ def evaluate_coco(model, criterion, dataloader, epoch, writer):
     results = []
     for i, (images, targets) in enumerate(dataloader):
         images = images.to(device)
+        targets = [{k: v.to(device) if hasattr(v, 'to') else v for k, v in target.items()} for target in targets]
         outputs = model(images)
         loss, losses = criterion(outputs, targets)
 
