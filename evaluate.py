@@ -41,13 +41,13 @@ def evaluate_coco(model, criterion, dataloader, epoch, writer):
         images = images.to(device)
         targets = [{k: v.to(device) if hasattr(v, 'to') else v for k, v in target.items()} for target in targets]
         outputs = model(images)
-        loss, losses = criterion(outputs, targets)
+        loss, loss_ce, loss_bbox, loss_giou = criterion(outputs, targets)
 
         # write the loss to tensorboard
         writer.add_scalar("val/loss", loss.item(), epoch * len(dataloader) + i)
-        writer.add_scalar("val/loss_ce", losses['loss_ce'].item(), epoch * len(dataloader) + i)
-        writer.add_scalar("val/loss_bbox", losses['loss_bbox'].item(), epoch * len(dataloader) + i)
-        writer.add_scalar("val/loss_giou", losses['loss_giou'].item(), epoch * len(dataloader) + i)
+        writer.add_scalar("val/loss_ce", loss_ce.item(), epoch * len(dataloader) + i)
+        writer.add_scalar("val/loss_bbox", loss_bbox.item(), epoch * len(dataloader) + i)
+        writer.add_scalar("val/loss_giou", loss_giou.item(), epoch * len(dataloader) + i)
 
         # get the predict labels and scores
         predict_logits = outputs['pred_logits']  # (batch_size, num_queries, num_classes)

@@ -43,18 +43,18 @@ class SetCriterion(nn.Module):
 
         # Compute the average number of target boxes across all nodes, for normalization purposes
         # TODO distribute computation
-        num_boxes = sum(len(target["labels"]) for target in targets)
+        # num_boxes = sum(len(target["labels"]) for target in targets)
         # num_boxes = torch.as_tensor([num_boxes], dtype=torch.float, device=next(iter(outputs.values())).device)
         # if is_dist_avail_and_initialized():
         #     torch.distributed.all_reduce(num_boxes)
         # num_boxes = torch.clamp(num_boxes / get_world_size(), min=1).item()
 
         # Compute all the requested losses
-        losses = {}
-        losses.update(self.loss_labels(outputs, targets, indices))
-        losses.update(self.loss_boxes(outputs, targets, indices))
-        loss = sum(self.weight_dict[k]*losses[k] for k, v in losses.items() if k in self.weight_dict)
-        return loss, losses
+        loss_ce = self.loss_labels(outputs, targets, indices)
+        loss_bbox, loss_giou = self.loss_boxes(outputs, targets, indices)
+        loss = (self.weight_dict['loss_ce']*loss_ce + self.weight_dict['loss_bbox']*loss_bbox +
+                self.weight_dict['loss_giou']*loss_giou)
+        return loss, loss_ce, loss_bbox, loss_giou
 
     def loss_labels(self, outputs, targets, indices):
         """
@@ -70,9 +70,8 @@ class SetCriterion(nn.Module):
         idx = self._get_src_permutation_idx(indices)  # (batch_idx, src_idx) Fancy indexing
         target_classes[idx] = target_classes_o
 
-        loss_ce = F.cross_entropy(src_logits.permute(0, 2, 1), target_classes, self.empty_weight.to(device))
-        losses = {'loss_ce': loss_ce}
-        return losses
+        loss_ce = F.cross_entropy(src_logits.permute(0, 2, 1), target_classes, self.empty_weight)
+        return loss_ce
 
     def loss_boxes(self, outputs, targets, indices):
         """
@@ -84,23 +83,20 @@ class SetCriterion(nn.Module):
         device = outputs['pred_boxes'].device
         idx = self._get_src_permutation_idx(indices)  # (batch_idx, src_idx) Fancy indexing
         src_boxes = outputs['pred_boxes'][idx]  # (num_target_boxes, 4)
-        target_boxes = []
-        for target, (_, index_j) in zip(targets, indices):  # notice that the target boxes must be normalized
-            height, width = target["boxes"].canvas_size  # image size
-            target_boxes.append(target["boxes"][index_j]/torch.tensor([width, height, width, height], device=device))
-        target_boxes = torch.cat(target_boxes, dim=0)  # (num_target_boxes, 4)
+        target_boxes = torch.cat([target["boxes"][index_j] /  # notice that the target boxes must be normalized
+                                  torch.tensor([target["boxes"].canvas_size[1], target["boxes"].canvas_size[0],
+                                                target["boxes"].canvas_size[1], target["boxes"].canvas_size[0]],
+                                               device=device)
+                                  for target, (_, index_j) in zip(targets, indices)])  # (num_target_boxes, 4)
         num_boxes = target_boxes.shape[0]
 
-        losses = {}
         loss_bbox = F.l1_loss(src_boxes, target_boxes, reduction='none')
-        losses['loss_bbox'] = loss_bbox.sum() / num_boxes
 
         loss_giou = 1 - torch.diag(generalized_box_iou(
             box_convert(src_boxes, 'cxcywh', 'xyxy'),
             box_convert(target_boxes, 'cxcywh', 'xyxy')
         ))
-        losses['loss_giou'] = loss_giou.sum() / num_boxes
-        return losses
+        return loss_bbox.sum() / num_boxes, loss_giou.sum() / num_boxes
 
     def _get_src_permutation_idx(self, indices):
         # permute predictions following indices (Fancy indexing)
@@ -156,11 +152,11 @@ class HungarianMatcher(nn.Module):
 
         # Also concat the target labels and boxes (normalized by the image size)
         tgt_ids = torch.cat([target["labels"] for target in targets])
-        tgt_bbox = []
-        for target in targets:
-            height, width = target["boxes"].canvas_size  # image size
-            tgt_bbox.append(target["boxes"]/torch.tensor([width, height, width, height]).to(device))
-        tgt_bbox = torch.cat(tgt_bbox)
+        tgt_bbox = torch.cat([target["boxes"] /  # notice that the target boxes must be normalized
+                              torch.tensor([target["boxes"].canvas_size[1], target["boxes"].canvas_size[0],
+                                            target["boxes"].canvas_size[1], target["boxes"].canvas_size[0]],
+                                           device=device)
+                              for target in targets])  # (num_target_boxes, 4)
 
         # Compute the classification cost. Contrary to the loss, we don't use the NLL,
         # but approximate it in 1 - proba[target class].

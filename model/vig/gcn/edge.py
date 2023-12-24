@@ -49,7 +49,7 @@ def dense_knn_matrix(x, k=16):
         #     nn_idx_list += [nn_idx_part]
         nn_idx = torch.cat(nn_idx_list, dim=1)  # (batch_size, num_points, k)
     else:
-        dist = pairwise_distance(x.detach())  # (batch_size, num_points, num_points)
+        dist = torch.cdist(x, x, p=2)  # (batch_size, num_points, num_points)
         _, nn_idx = torch.topk(-dist, k=k)  # (batch_size, num_points, k)
     center_idx = torch.arange(0, n_points, device=x.device).repeat(batch_size, k, 1).transpose(2, 1)
     return torch.stack((nn_idx, center_idx), dim=0)  # (2, batch_size, num_points, k)

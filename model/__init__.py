@@ -19,6 +19,6 @@ def build(opts):
         num_classes = 20  # default num_classes
 
     model = DeGCN(num_classes).to(device)
-    criterion = SetCriterion(num_classes)
+    criterion = SetCriterion(num_classes).to(device)
 
     return model, criterion

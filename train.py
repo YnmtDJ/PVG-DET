@@ -17,7 +17,7 @@ def train_one_epoch(model, criterion, dataloader, optimizer, epoch, writer):
         images = images.to(device)
         targets = [{k: v.to(device) if hasattr(v, 'to') else v for k, v in target.items()} for target in targets]
         outputs = model(images)
-        loss, losses = criterion(outputs, targets)
+        loss, loss_ce, loss_bbox, loss_giou = criterion(outputs, targets)
 
         # back propagation and update parameters
         optimizer.zero_grad()
@@ -26,6 +26,6 @@ def train_one_epoch(model, criterion, dataloader, optimizer, epoch, writer):
 
         # write the loss to tensorboard
         writer.add_scalar("train/loss", loss.item(), epoch * len(dataloader) + i)
-        writer.add_scalar("train/loss_ce", losses['loss_ce'].item(), epoch * len(dataloader) + i)
-        writer.add_scalar("train/loss_bbox", losses['loss_bbox'].item(), epoch * len(dataloader) + i)
-        writer.add_scalar("train/loss_giou", losses['loss_giou'].item(), epoch * len(dataloader) + i)
+        writer.add_scalar("train/loss_ce", loss_ce.item(), epoch * len(dataloader) + i)
+        writer.add_scalar("train/loss_bbox", loss_bbox.item(), epoch * len(dataloader) + i)
+        writer.add_scalar("train/loss_giou", loss_giou.item(), epoch * len(dataloader) + i)
