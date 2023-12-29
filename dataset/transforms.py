@@ -23,6 +23,7 @@ def create_transform():
 
     transform_val = v2.Compose([
         v2.ToImage(),
+        v2.RandomResize(224, 400, antialias=True),
         normalize
     ])
 

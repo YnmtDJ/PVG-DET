@@ -73,7 +73,7 @@ class CocoDetection(torchvision.datasets.CocoDetection):
         canvas_size = tuple(F.get_size(image))
 
         batched_target = list_of_dicts_to_dict_of_lists(target['annotations'])
-        target = {"image_id": target["image_id"]}
+        target = {"image_id": target["image_id"], "origin_size": canvas_size}
 
         if "bbox" in batched_target:
             target["boxes"] = F.convert_bounding_box_format(

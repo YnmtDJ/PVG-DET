@@ -62,7 +62,7 @@ def evaluate_coco(model, criterion, dataloader, epoch, writer):
 
         for j, target in enumerate(targets):
             image_id = target['image_id']
-            height, width = target["boxes"].canvas_size  # image size
+            height, width = target["origin_size"]  # image size
 
             # non-normalized boxes coordinates by the size of each image
             boxes[j] = boxes[j] * torch.tensor([width, height, width, height], device=device)
