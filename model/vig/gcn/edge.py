@@ -37,6 +37,7 @@ def dense_knn_matrix(x, k=16):
     n_part = 10000
     if n_points > n_part:
         # TODO: implement memory efficient knn
+        raise NotImplementedError("memory efficient knn is not implemented yet.")
         nn_idx_list = []
         # groups = math.ceil(n_points / n_part)
         # for i in range(groups):

@@ -2,6 +2,7 @@ import torch
 import torch.nn.functional as F
 from pycocotools.cocoeval import COCOeval
 from torchvision.ops import box_convert
+from tqdm import tqdm
 
 
 @torch.no_grad()
@@ -37,7 +38,11 @@ def evaluate_coco(model, criterion, dataloader, epoch, writer):
     model.eval()
     criterion.eval()
     results = []
-    for i, (images, targets) in enumerate(dataloader):
+    for i, (images, targets) in enumerate(tqdm(dataloader)):
+        if i % 200 == 0:  # TODO: really need it?
+            torch.cuda.empty_cache()
+            torch.cuda.ipc_collect()
+
         images = images.to(device)
         targets = [{k: v.to(device) if hasattr(v, 'to') else v for k, v in target.items()} for target in targets]
         outputs = model(images)

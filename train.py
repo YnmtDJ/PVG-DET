@@ -1,3 +1,5 @@
+import torch
+from tqdm import tqdm
 
 
 def train_one_epoch(model, criterion, dataloader, optimizer, epoch, writer):
@@ -13,7 +15,11 @@ def train_one_epoch(model, criterion, dataloader, optimizer, epoch, writer):
     device = next(model.parameters()).device
     model.train()
     criterion.train()
-    for i, (images, targets) in enumerate(dataloader):
+    for i, (images, targets) in enumerate(tqdm(dataloader)):
+        if i % 200 == 0:  # TODO: really need it?
+            torch.cuda.empty_cache()
+            torch.cuda.ipc_collect()
+
         images = images.to(device)
         targets = [{k: v.to(device) if hasattr(v, 'to') else v for k, v in target.items()} for target in targets]
         outputs = model(images)

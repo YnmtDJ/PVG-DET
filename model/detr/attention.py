@@ -70,7 +70,7 @@ class MultiheadAttention(Module):
         self.head_dim = embed_dim // num_heads
         assert self.head_dim * num_heads == self.embed_dim, "embed_dim must be divisible by num_heads"
 
-        self.out_proj = _LinearWithBias(vdim, vdim)
+        self.out_proj = nn.Linear(vdim, vdim)
 
         self.in_proj_bias = None
         self.in_proj_weight = None
