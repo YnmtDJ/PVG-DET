@@ -39,50 +39,67 @@ def evaluate_coco(model, criterion, dataloader, epoch, writer):
     criterion.eval()
     results = []
     for i, (images, targets) in enumerate(tqdm(dataloader)):
-        if i % 200 == 0:  # TODO: really need it?
+        if i % 200 == 0 and torch.cuda.is_available():  # TODO: really need it?
             torch.cuda.empty_cache()
             torch.cuda.ipc_collect()
 
-        images = images.to(device)
+        images = [image.to(device) for image in images]
         targets = [{k: v.to(device) if hasattr(v, 'to') else v for k, v in target.items()} for target in targets]
-        outputs = model(images)
-        loss, loss_ce, loss_bbox, loss_giou = criterion(outputs, targets)
-
-        # write the loss to tensorboard
-        writer.add_scalar("val/loss", loss.item(), epoch * len(dataloader) + i)
-        writer.add_scalar("val/loss_ce", loss_ce.item(), epoch * len(dataloader) + i)
-        writer.add_scalar("val/loss_bbox", loss_bbox.item(), epoch * len(dataloader) + i)
-        writer.add_scalar("val/loss_giou", loss_giou.item(), epoch * len(dataloader) + i)
-
-        # get the predict labels and scores
-        predict_logits = outputs['pred_logits']  # (batch_size, num_queries, num_classes)
-        batch_size, num_queries, num_classes = predict_logits.shape
-        predict_prob = F.softmax(predict_logits, dim=-1)
-        scores, labels = torch.max(predict_prob, dim=-1)
-
-        # convert the boxes from (center_x, center_y, width, height) to (x1, y1, x2, y2)
-        predict_boxes = outputs['pred_boxes']  # (batch_size, num_queries, 4)
-        boxes = box_convert(predict_boxes.reshape(-1, 4), "cxcywh", "xyxy")
-        boxes = boxes.reshape(batch_size, num_queries, 4)
-
+        predictions = model(images)
         for j, target in enumerate(targets):
             image_id = target['image_id']
-            height, width = target["origin_size"]  # image size
-
-            # non-normalized boxes coordinates by the size of each image
-            boxes[j] = boxes[j] * torch.tensor([width, height, width, height], device=device)
+            prediction = predictions[j]
+            predict_num = prediction['labels'].shape[0]
             results.extend(
                 [
                     {
                         "image_id": image_id,
-                        "category_id": labels[j][k].item(),
-                        "bbox": boxes[j][k].tolist(),
-                        "score": scores[j][k].item(),
+                        "category_id": prediction['labels'][k].item(),
+                        "bbox": prediction['boxes'][k].tolist(),
+                        "score": prediction['scores'][k].item(),
                     }
-                    for k in range(num_queries)
-                    if labels[j][k].item() != num_classes - 1  # filter the no-object class
+                    for k in range(predict_num)
                 ]
             )
+
+
+        # loss, loss_ce, loss_bbox, loss_giou = criterion(outputs, targets)
+        #
+        # # write the loss to tensorboard
+        # writer.add_scalar("val/loss", loss.item(), epoch * len(dataloader) + i)
+        # writer.add_scalar("val/loss_ce", loss_ce.item(), epoch * len(dataloader) + i)
+        # writer.add_scalar("val/loss_bbox", loss_bbox.item(), epoch * len(dataloader) + i)
+        # writer.add_scalar("val/loss_giou", loss_giou.item(), epoch * len(dataloader) + i)
+        #
+        # # get the predict labels and scores
+        # predict_logits = outputs['pred_logits']  # (batch_size, num_queries, num_classes)
+        # batch_size, num_queries, num_classes = predict_logits.shape
+        # predict_prob = F.softmax(predict_logits, dim=-1)
+        # scores, labels = torch.max(predict_prob, dim=-1)
+        #
+        # # convert the boxes from (center_x, center_y, width, height) to (x1, y1, x2, y2)
+        # predict_boxes = outputs['pred_boxes']  # (batch_size, num_queries, 4)
+        # boxes = box_convert(predict_boxes.reshape(-1, 4), "cxcywh", "xyxy")
+        # boxes = boxes.reshape(batch_size, num_queries, 4)
+        #
+        # for j, target in enumerate(targets):
+        #     image_id = target['image_id']
+        #     height, width = target["origin_size"]  # image size
+        #
+        #     # non-normalized boxes coordinates by the size of each image
+        #     boxes[j] = boxes[j] * torch.tensor([width, height, width, height], device=device)
+        #     results.extend(
+        #         [
+        #             {
+        #                 "image_id": image_id,
+        #                 "category_id": labels[j][k].item(),
+        #                 "bbox": boxes[j][k].tolist(),
+        #                 "score": scores[j][k].item(),
+        #             }
+        #             for k in range(num_queries)
+        #             if labels[j][k].item() != num_classes - 1  # filter the no-object class
+        #         ]
+        #     )
 
     if len(results) == 0:  # model does not detect any object
         print("epoch: {}, evaluate coco, model does not detect any object.".format(epoch))

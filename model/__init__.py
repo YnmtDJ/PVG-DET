@@ -1,7 +1,9 @@
 import torch
+from torchvision.models.detection import RetinaNet
 
 from model.criterion import SetCriterion
 from model.de_gcn import DeGCN
+from model.retinanet.retinanet import PyramidBackbone
 
 
 def build(opts):
@@ -18,7 +20,9 @@ def build(opts):
     else:
         num_classes = 20  # default num_classes
 
-    model = DeGCN(num_classes).to(device)
+    #  TODO: try different models
+    backbone = PyramidBackbone()
+    model = RetinaNet(backbone, num_classes, 224, 400).to(device)  # model = DeGCN(num_classes).to(device)
     criterion = SetCriterion(num_classes).to(device)
 
     return model, criterion

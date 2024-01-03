@@ -82,7 +82,7 @@ class CocoDetection(torchvision.datasets.CocoDetection):
                     format=tv_tensors.BoundingBoxFormat.XYWH,
                     canvas_size=canvas_size,
                 ),
-                new_format=tv_tensors.BoundingBoxFormat.CXCYWH,
+                new_format=tv_tensors.BoundingBoxFormat.XYXY,
             )
         else:
             target["boxes"] = F.convert_bounding_box_format(
@@ -91,7 +91,7 @@ class CocoDetection(torchvision.datasets.CocoDetection):
                     format=tv_tensors.BoundingBoxFormat.XYWH,
                     canvas_size=canvas_size,
                 ),
-                new_format=tv_tensors.BoundingBoxFormat.CXCYWH,
+                new_format=tv_tensors.BoundingBoxFormat.XYXY,
             )
 
         if "category_id" in batched_target:

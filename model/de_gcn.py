@@ -1,7 +1,7 @@
 import torch
 from torch import nn
 
-from model.backbone import Stem
+from model.vig.vig import Stem16
 from model.common import MLP
 from model.detr.transformer import TransformerDecoderLayer, TransformerDecoder
 from model.position_embedding import PositionEmbedding2d
@@ -20,7 +20,7 @@ class DeGCN(nn.Module):
         :param d_model: The hidden dimension.
         """
         super(DeGCN, self).__init__()
-        self.stem = Stem(3, d_model)
+        self.stem = Stem16(3, d_model)
         self.pos_embed = PositionEmbedding2d()
         self.vig = ViG(d_model)
         self.query_embed = nn.Parameter(torch.randn(num_queries, d_model))

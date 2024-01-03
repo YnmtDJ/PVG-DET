@@ -16,14 +16,17 @@ def train_one_epoch(model, criterion, dataloader, optimizer, epoch, writer):
     model.train()
     criterion.train()
     for i, (images, targets) in enumerate(tqdm(dataloader)):
-        if i % 200 == 0:  # TODO: really need it?
+        if i % 200 == 0 and torch.cuda.is_available():  # TODO: really need it?
             torch.cuda.empty_cache()
             torch.cuda.ipc_collect()
 
-        images = images.to(device)
+        images = [image.to(device) for image in images]
         targets = [{k: v.to(device) if hasattr(v, 'to') else v for k, v in target.items()} for target in targets]
-        outputs = model(images)
-        loss, loss_ce, loss_bbox, loss_giou = criterion(outputs, targets)
+        losses = model(images, targets)
+        loss_ce = losses['classification']
+        loss_bbox = losses['bbox_regression']
+        loss = loss_ce + loss_bbox
+        # loss, loss_ce, loss_bbox, loss_giou = criterion(outputs, targets)
 
         # back propagation and update parameters
         optimizer.zero_grad()
@@ -34,4 +37,4 @@ def train_one_epoch(model, criterion, dataloader, optimizer, epoch, writer):
         writer.add_scalar("train/loss", loss.item(), epoch * len(dataloader) + i)
         writer.add_scalar("train/loss_ce", loss_ce.item(), epoch * len(dataloader) + i)
         writer.add_scalar("train/loss_bbox", loss_bbox.item(), epoch * len(dataloader) + i)
-        writer.add_scalar("train/loss_giou", loss_giou.item(), epoch * len(dataloader) + i)
+        # writer.add_scalar("train/loss_giou", loss_giou.item(), epoch * len(dataloader) + i)
