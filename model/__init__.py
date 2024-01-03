@@ -1,5 +1,5 @@
 import torch
-from torchvision.models.detection import RetinaNet
+from torchvision.models.detection import RetinaNet, retinanet_resnet50_fpn_v2, RetinaNet_ResNet50_FPN_Weights
 
 from model.criterion import SetCriterion
 from model.de_gcn import DeGCN
@@ -22,7 +22,8 @@ def build(opts):
 
     #  TODO: try different models
     backbone = PyramidBackbone()
-    model = RetinaNet(backbone, num_classes, 224, 400).to(device)  # model = DeGCN(num_classes).to(device)
+    model = RetinaNet(backbone, num_classes, 224, 352).to(device)  # model = DeGCN(num_classes).to(device)
+    model = retinanet_resnet50_fpn_v2(min_size=224, max_size=352).to(device)
     criterion = SetCriterion(num_classes).to(device)
 
     return model, criterion

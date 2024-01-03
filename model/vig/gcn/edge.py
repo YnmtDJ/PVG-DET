@@ -1,3 +1,5 @@
+import math
+
 import torch
 from torch import nn
 from torch.nn import functional as F
@@ -36,18 +38,15 @@ def dense_knn_matrix(x, k=16):
     # memory efficient implementation
     n_part = 10000
     if n_points > n_part:
-        # TODO: implement memory efficient knn
-        raise NotImplementedError("memory efficient knn is not implemented yet.")
         nn_idx_list = []
-        # groups = math.ceil(n_points / n_part)
-        # for i in range(groups):
-        #     start_idx = n_part * i
-        #     end_idx = min(n_points, n_part * (i + 1))
-        #     dist = part_pairwise_distance(x.detach(), start_idx, end_idx)
-        #     if relative_pos is not None:
-        #         dist += relative_pos[:, start_idx:end_idx]
-        #     _, nn_idx_part = torch.topk(-dist, k=k)
-        #     nn_idx_list += [nn_idx_part]
+        groups = math.ceil(n_points / n_part)
+        for i in range(groups):
+            start_idx = n_part * i
+            end_idx = min(n_points, n_part * (i + 1))
+            x_part = x[:, start_idx:end_idx, :]  # (batch_size, n_part, num_dims)
+            dist = torch.cdist(x_part, x, p=2)  # (batch_size, n_part, num_points)
+            _, nn_idx_part = torch.topk(-dist, k=k)  # (batch_size, n_part, k)
+            nn_idx_list += [nn_idx_part]
         nn_idx = torch.cat(nn_idx_list, dim=1)  # (batch_size, num_points, k)
     else:
         dist = torch.cdist(x, x, p=2)  # (batch_size, num_points, num_points)
