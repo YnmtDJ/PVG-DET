@@ -1,4 +1,5 @@
 from collections import OrderedDict
+from typing import List
 
 import torch
 from torch import nn
@@ -60,7 +61,7 @@ class PyramidViG(nn.Module):
     Vision GNN: An Image is Worth Graph of Nodes. (With pyramid)
     https://github.com/huawei-noah/Efficient-AI-Backbones/tree/master/vig_pytorch
     """
-    def __init__(self, blocks=None, channels=None, k=9, gcn='MRConv2d', act=nn.GELU(), drop_prob=0.1):
+    def __init__(self, blocks: List = None, channels: List = None, k=9, gcn='MRConv2d', act=nn.GELU(), drop_prob=0.1):
         """
         :param blocks: The number of blocks in each layer.
         :param channels: The number of channels in each layer.
