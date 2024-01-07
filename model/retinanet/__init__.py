@@ -30,5 +30,5 @@ def build_retinanet(opts):
     anchor_sizes = tuple((x, int(x * 2 ** (1.0 / 3)), int(x * 2 ** (2.0 / 3))) for x in [16, 32, 64, 128, 256])
     aspect_ratios = ((0.5, 1.0, 2.0),) * len(anchor_sizes)
     anchor_generator = AnchorGenerator(anchor_sizes, aspect_ratios)
-    model = RetinaNet(backbone, num_classes, 224, 400, anchor_generator=anchor_generator).to(device)
+    model = RetinaNet(backbone, num_classes, 224, 368, anchor_generator=anchor_generator).to(device)
     return model

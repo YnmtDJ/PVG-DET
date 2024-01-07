@@ -67,6 +67,13 @@ class CocoDetection(torchvision.datasets.CocoDetection):
         if self._transforms is not None:
             img, target = self._transforms(img, target)
 
+        # TODO: really need this?
+        eps = 1e-4
+        x_idx = torch.eq(target["boxes"][:, 0], target["boxes"][:, 2])
+        y_idx = torch.eq(target["boxes"][:, 1], target["boxes"][:, 3])
+        target["boxes"][:, 2][x_idx] += eps
+        target["boxes"][:, 3][y_idx] += eps
+
         return img, target
 
     def wrap_dataset_for_transforms_v2(self, image, target):
