@@ -3,6 +3,7 @@ from collections import defaultdict
 
 import cv2
 import torch
+from torchvision.ops import box_convert
 from torchvision.transforms import v2
 
 
@@ -36,11 +37,12 @@ def list_of_dicts_to_dict_of_lists(list_of_dicts):
     return dict(dict_of_lists)
 
 
-def show_image(image, target):
+def show_image(image, target, in_fmt):
     """
     Show the image with bounding boxes.
     :param image: The image.
     :param target: The target in the image.
+    :param in_fmt: The format of the input bounding box, e.g. xyxy, xywh, cxcywh.
     """
     image = image.permute(1, 2, 0).numpy()
     image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
@@ -48,6 +50,7 @@ def show_image(image, target):
     for i in range(len(target['boxes'])):
         bbox = target['boxes'][i]
         label = target['labels'][i]
+        bbox = box_convert(bbox, in_fmt, 'cxcywh')
         center_x = int(bbox[0])
         center_y = int(bbox[1])
         width = int(bbox[2])

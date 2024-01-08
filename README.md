@@ -10,7 +10,7 @@ Object365
 
 
 
-[VisDrone](https://github.com/VisDrone/VisDrone-Dataset) Car 1.5G  
+[VisDrone](https://github.com/VisDrone/VisDrone-Dataset) Car, Person 1.5G  
 [DOTA](https://captain-whu.github.io/DOTA/dataset.html) Ariel (high resolution) 20G  
 [xview](http://xviewdataset.org/) overhead imagery 33G  
 [HRSC2016](http://www.escience.cn/people/liuzikun/DataSet.html) Ship (high resolution) 4GB  

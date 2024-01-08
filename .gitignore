@@ -162,6 +162,7 @@ cython_debug/
 # dataset
 dataset/COCO/
 dataset/ImageNet/
+dataset/VisDrone
 
 # log
 log/

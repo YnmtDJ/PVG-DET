@@ -3,6 +3,7 @@ import os
 import torch
 import torchvision
 import torchvision.transforms.v2.functional as F
+from torch.utils.data import Dataset
 from torchvision import tv_tensors
 
 from dataset.transforms import create_transform
@@ -19,6 +20,8 @@ def create_dataset(dataset_root: str, dataset_name: str):
     if dataset_name == "COCO":
         dataset_train = create_coco_dataset(os.path.join(dataset_root, dataset_name), "train")
         dataset_val = create_coco_dataset(os.path.join(dataset_root, dataset_name), "val")
+    elif dataset_name == "VisDrone":
+        raise NotImplementedError("VisDrone dataset is not implemented yet.")
     elif dataset_name == "ImageNet":
         raise NotImplementedError("ImageNet dataset is not implemented yet.")
     else:
@@ -109,8 +112,46 @@ class CocoDetection(torchvision.datasets.CocoDetection):
         return image, target
 
 
+class VisDroneDetection(Dataset):
+    def __init__(self, root):
+        super(VisDroneDetection, self).__init__()
+        self.img_root = os.path.join(root, "images")
+        self.ann_root = os.path.join(root, "annotations")
+        self.ids = sorted([os.path.splitext(f)[0] for f in os.listdir(self.img_root)])
+        self.anns = dict()
+
+
+    def __getitem__(self, index):
+
+    def __len__(self):
+        return len(self.ids)
+
+    def createIndex(self):
+        for id in self.ids:
+            ann = {}
+            boxes = []
+            labels = []
+            scores = []
+            truncations = []
+            occlusions = []
+            file_path = os.path.join(self.ann_root, id + ".txt")
+            with open(file_path, 'r') as file:
+                lines = file.readlines()
+                for line in lines:
+                    # 去掉行尾的换行符并使用逗号分隔数据
+                    left, top, width, height, score, category, truncation, occlusion = line.strip().split(',')
+                    boxes.append(torch.tensor([left, top, width, height], dtype=torch.float32))  # TODO: check the format
+                    labels.append(torch.tensor(category, dtype=torch.int64))
+                    scores.append(torch.tensor(score, dtype=torch.float32))
+                    truncations.append(torch.tensor(truncation, dtype=torch.int64))
+                    occlusions.append(torch.tensor(occlusion, dtype=torch.int64))
+            ann['boxes'] = torch.stack(boxes)
+            ann['labels'] = torch.stack(labels)
+
+
+
 if __name__ == "__main__":
     # demo for the create_dataset()
     dataset_train, dataset_val = create_dataset("./", "COCO")
     image, target = dataset_train[0]
-    show_image(image, target)
+    show_image(image, target, "xyxy")
