@@ -3,6 +3,7 @@ from collections import defaultdict
 
 import cv2
 import torch
+from torchvision import tv_tensors
 from torchvision.ops import box_convert
 from torchvision.transforms import v2
 
@@ -51,11 +52,8 @@ def show_image(image, target, in_fmt):
         bbox = target['boxes'][i]
         label = target['labels'][i]
         bbox = box_convert(bbox, in_fmt, 'cxcywh')
-        center_x = int(bbox[0])
-        center_y = int(bbox[1])
-        width = int(bbox[2])
-        height = int(bbox[3])
-        cv2.putText(image, str(label.item()), (center_x, center_y), cv2.FONT_HERSHEY_SIMPLEX, 1,
+        center_x, center_y, width, height = [int(val) for val in bbox]
+        cv2.putText(image, str(label.item()), (center_x, center_y), cv2.FONT_HERSHEY_SIMPLEX, 0.5,
                     (0, 0, 255))
         cv2.rectangle(image, (center_x - width // 2, center_y - height // 2),
                       (center_x + width // 2, center_y + height // 2),
@@ -97,3 +95,22 @@ def save_checkpoint(opts, model, optimizer, lr_scheduler, epoch):
     if not os.path.exists(os.path.dirname(opts.checkpoint_path)):  # check if the parent directory exists
         os.makedirs(os.path.dirname(opts.checkpoint_path))
     torch.save(checkpoint, opts.checkpoint_path)
+
+
+def fix_boxes(boxes: tv_tensors.BoundingBoxes):
+    """
+    Fix the boxes, make sure the boxes are in the correct format.
+    :param boxes: The boxes to be fixed.
+    """
+    num, _ = boxes.shape
+    eps = 2*1e-4
+    if boxes.format == tv_tensors.BoundingBoxFormat.XYXY:
+        x_idx = torch.eq(boxes[:, 0], boxes[:, 2])
+        y_idx = torch.eq(boxes[:, 1], boxes[:, 3])
+    elif boxes.format == tv_tensors.BoundingBoxFormat.XYWH or boxes.format == tv_tensors.BoundingBoxFormat.CXCYWH:
+        x_idx = torch.eq(torch.zeros([num]), boxes[:, 2])
+        y_idx = torch.eq(torch.zeros([num]), boxes[:, 3])
+    else:
+        raise ValueError("Invalid bounding box format.")
+    boxes[:, 2][x_idx] += eps
+    boxes[:, 3][y_idx] += eps

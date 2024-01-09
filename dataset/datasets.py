@@ -1,13 +1,15 @@
 import os
+import time
 
 import torch
 import torchvision
 import torchvision.transforms.v2.functional as F
+from PIL import Image
 from torch.utils.data import Dataset
 from torchvision import tv_tensors
 
 from dataset.transforms import create_transform
-from util.misc import list_of_dicts_to_dict_of_lists, show_image
+from util.misc import list_of_dicts_to_dict_of_lists, show_image, fix_boxes
 
 
 def create_dataset(dataset_root: str, dataset_name: str):
@@ -21,7 +23,8 @@ def create_dataset(dataset_root: str, dataset_name: str):
         dataset_train = create_coco_dataset(os.path.join(dataset_root, dataset_name), "train")
         dataset_val = create_coco_dataset(os.path.join(dataset_root, dataset_name), "val")
     elif dataset_name == "VisDrone":
-        raise NotImplementedError("VisDrone dataset is not implemented yet.")
+        dataset_train = create_visdrone_dataset(os.path.join(dataset_root, dataset_name), "train")
+        dataset_val = create_visdrone_dataset(os.path.join(dataset_root, dataset_name), "val")
     elif dataset_name == "ImageNet":
         raise NotImplementedError("ImageNet dataset is not implemented yet.")
     else:
@@ -53,6 +56,28 @@ def create_coco_dataset(data_root: str, image_set: str):
     return CocoDetection(root=root, annFile=annFile, transforms=transforms)
 
 
+def create_visdrone_dataset(data_root: str, image_set: str):
+    """
+    Create the visdrone dataset.
+    :param data_root: The root directory of visdrone dataset.
+    :param image_set: The image set, e.g. train, val, test.
+    :return: The torch.utils.data.Dataset().
+    """
+    transform_train, transform_val = create_transform()
+
+    root = os.path.join(data_root, image_set)
+    if image_set == "train":
+        transforms = transform_train
+    elif image_set == "val":
+        transforms = transform_val
+    elif image_set == "test":
+        transforms = transform_val
+    else:
+        raise ValueError("The image_set must be train, val or test.")
+
+    return VisDroneDetection(root=root, transforms=transforms)
+
+
 class CocoDetection(torchvision.datasets.CocoDetection):
     """
     Referring to the pytorch CocoDetection implementation, the difference is that
@@ -70,12 +95,7 @@ class CocoDetection(torchvision.datasets.CocoDetection):
         if self._transforms is not None:
             img, target = self._transforms(img, target)
 
-        # TODO: really need this?
-        eps = 1e-4
-        x_idx = torch.eq(target["boxes"][:, 0], target["boxes"][:, 2])
-        y_idx = torch.eq(target["boxes"][:, 1], target["boxes"][:, 3])
-        target["boxes"][:, 2][x_idx] += eps
-        target["boxes"][:, 3][y_idx] += eps
+        fix_boxes(target["boxes"])  # TODO: really need this?
 
         return img, target
 
@@ -86,23 +106,17 @@ class CocoDetection(torchvision.datasets.CocoDetection):
         target = {"image_id": target["image_id"], "origin_size": canvas_size}
 
         if "bbox" in batched_target:
-            target["boxes"] = F.convert_bounding_box_format(
-                tv_tensors.BoundingBoxes(
-                    batched_target["bbox"],
-                    format=tv_tensors.BoundingBoxFormat.XYWH,
-                    canvas_size=canvas_size,
-                ),
-                new_format=tv_tensors.BoundingBoxFormat.XYXY,
-            )
+            bbox = batched_target["bbox"]
         else:
-            target["boxes"] = F.convert_bounding_box_format(
-                tv_tensors.BoundingBoxes(
-                    torch.empty((0, 4)),
-                    format=tv_tensors.BoundingBoxFormat.XYWH,
-                    canvas_size=canvas_size,
-                ),
-                new_format=tv_tensors.BoundingBoxFormat.XYXY,
-            )
+            bbox = torch.empty((0, 4))
+        target["boxes"] = F.convert_bounding_box_format(
+            tv_tensors.BoundingBoxes(
+                bbox,
+                format=tv_tensors.BoundingBoxFormat.XYWH,
+                canvas_size=canvas_size,
+            ),
+            new_format=tv_tensors.BoundingBoxFormat.XYXY,
+        )
 
         if "category_id" in batched_target:
             target["labels"] = torch.tensor(batched_target["category_id"])
@@ -113,45 +127,97 @@ class CocoDetection(torchvision.datasets.CocoDetection):
 
 
 class VisDroneDetection(Dataset):
-    def __init__(self, root):
+    """
+    This class is used to load the VisDrone dataset for object detection.
+    """
+    def __init__(self, root, transforms=None):
+        """
+        :param root: The root directory of VisDrone dataset, which contains the subdirectories: images and annotations.
+        :param transforms: A function/transform that takes input and target as entry and returns a transformed version.
+        """
         super(VisDroneDetection, self).__init__()
+        self.transforms = transforms
         self.img_root = os.path.join(root, "images")
         self.ann_root = os.path.join(root, "annotations")
         self.ids = sorted([os.path.splitext(f)[0] for f in os.listdir(self.img_root)])
-        self.anns = dict()
 
+        self.anns = dict()
+        self.load_anns()
 
     def __getitem__(self, index):
+        image = self.load_image(index)
+        target = self.load_target(index)
+        image, target = self.wrap_dataset_for_transforms_v2(image, target)
+        if self.transforms is not None:
+            image, target = self.transforms(image, target)
+
+        fix_boxes(target["boxes"])  # TODO: really need this?
+
+        return image, target
 
     def __len__(self):
         return len(self.ids)
 
-    def createIndex(self):
-        for id in self.ids:
-            ann = {}
-            boxes = []
-            labels = []
-            scores = []
-            truncations = []
-            occlusions = []
-            file_path = os.path.join(self.ann_root, id + ".txt")
+    def load_image(self, index):
+        image_id = self.ids[index]
+        image_path = os.path.join(self.img_root, image_id + ".jpg")
+        return Image.open(image_path).convert("RGB")
+
+    def load_target(self, index):
+        image_id = self.ids[index]
+        return self.anns[image_id]
+
+    def load_anns(self):
+        """
+        load annotations from txt files
+        """
+        print("loading annotations into memory...")
+        start_time = time.time()
+
+        for image_id in self.ids:
+            ann = {"image_id": image_id}
+            boxes = torch.empty([0, 4], dtype=torch.float32)
+            scores = torch.empty([0], dtype=torch.float32)
+            labels, truncations, occlusions = [torch.empty([0], dtype=torch.int64) for _ in range(3)]
+
+            file_path = os.path.join(self.ann_root, image_id + ".txt")
             with open(file_path, 'r') as file:
                 lines = file.readlines()
                 for line in lines:
-                    # 去掉行尾的换行符并使用逗号分隔数据
-                    left, top, width, height, score, category, truncation, occlusion = line.strip().split(',')
-                    boxes.append(torch.tensor([left, top, width, height], dtype=torch.float32))  # TODO: check the format
-                    labels.append(torch.tensor(category, dtype=torch.int64))
-                    scores.append(torch.tensor(score, dtype=torch.float32))
-                    truncations.append(torch.tensor(truncation, dtype=torch.int64))
-                    occlusions.append(torch.tensor(occlusion, dtype=torch.int64))
-            ann['boxes'] = torch.stack(boxes)
-            ann['labels'] = torch.stack(labels)
+                    # split the line by ',' and remove the '\n' at the end of the line.
+                    data = line.strip().split(',')[:8]
+                    left, top, width, height, score, category, truncation, occlusion = [float(val) for val in data]
+                    boxes = torch.cat([boxes, torch.tensor([[left, top, width, height]], dtype=torch.float32)])
+                    labels = torch.cat([labels, torch.tensor([category], dtype=torch.int64)])
+                    scores = torch.cat([scores, torch.tensor([score], dtype=torch.float32)])
+                    truncations = torch.cat([truncations, torch.tensor([truncation], dtype=torch.int64)])
+                    occlusions = torch.cat([occlusions, torch.tensor([occlusion], dtype=torch.int64)])
 
+            ann.update({'boxes': boxes, 'labels': labels, 'scores': scores, 'truncations': truncations,
+                        'occlusions': occlusions})
+            self.anns[image_id] = ann
+
+        end_time = time.time()
+        print("Done (t={:0.2f}s)".format(end_time - start_time))
+
+    def wrap_dataset_for_transforms_v2(self, image, target):
+        canvas_size = tuple(F.get_size(image))
+
+        target["origin_size"] = canvas_size
+        target["boxes"] = F.convert_bounding_box_format(
+            tv_tensors.BoundingBoxes(
+                target["boxes"],
+                format=tv_tensors.BoundingBoxFormat.XYWH,
+                canvas_size=canvas_size,
+            ),
+            new_format=tv_tensors.BoundingBoxFormat.XYXY,
+        )
+
+        return image, target
 
 
 if __name__ == "__main__":
     # demo for the create_dataset()
-    dataset_train, dataset_val = create_dataset("./", "COCO")
+    dataset_train, dataset_val = create_dataset("./", "VisDrone")
     image, target = dataset_train[0]
     show_image(image, target, "xyxy")
