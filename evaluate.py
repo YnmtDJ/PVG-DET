@@ -50,12 +50,13 @@ def evaluate_coco(model, criterion, dataloader, epoch, writer):
             image_id = target['image_id']
             prediction = predictions[j]
             predict_num = prediction['labels'].shape[0]
+            boxes = box_convert(prediction['boxes'], 'xyxy', 'xywh')
             results.extend(
                 [
                     {
                         "image_id": image_id,
                         "category_id": prediction['labels'][k].item(),
-                        "bbox": prediction['boxes'][k].tolist(),
+                        "bbox": boxes[k].tolist(),
                         "score": prediction['scores'][k].item(),
                     }
                     for k in range(predict_num)
