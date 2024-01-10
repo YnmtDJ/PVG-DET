@@ -19,3 +19,7 @@ Object365
 [TinyPerson](http://m6z.cn/6vqF3T) Person 8.23G 
 [CityPersons](https://www.cityscapes-dataset.com/) Person  
 [Spotting Birds](https://github.com/IIM-TTIJ/MVA2023SmallObjectDetection4SpottingBirds) 10G  
+
+## Model Setting
+COCO: [16, 32, 64, 128, 256], (224, 368), [80, 160, 400, 640], [2, 2, 6, 2], 80  
+VisDrone: [16, 32, 64], (512, 704), [80, 160, 400, 640], [2, 2, 6, 2], 80

@@ -17,6 +17,8 @@ def build_retinanet(opts):
     device = torch.device(opts.device)
     if opts.dataset_name == "COCO":
         num_classes = 91  # because the coco dataset max label id is 90, so we set the num_classes to 91
+    elif opts.dataset_name == "VisDrone":
+        num_classes = 12  # because the visdrone dataset max label id is 11, so we set the num_classes to 12
     elif opts.dataset_name == "ImageNet":
         raise NotImplementedError("ImageNet dataset is not implemented yet.")
     else:
@@ -27,8 +29,8 @@ def build_retinanet(opts):
     # backbone = _resnet_fpn_extractor(
     #     backbone, 5, returned_layers=[2, 3, 4], extra_blocks=LastLevelP6P7(2048, 256)
     # )
-    anchor_sizes = tuple((x, int(x * 2 ** (1.0 / 3)), int(x * 2 ** (2.0 / 3))) for x in [16, 32, 64, 128, 256])
+    anchor_sizes = tuple((x, int(x * 2 ** (1.0 / 3)), int(x * 2 ** (2.0 / 3))) for x in [16, 32, 64])
     aspect_ratios = ((0.5, 1.0, 2.0),) * len(anchor_sizes)
     anchor_generator = AnchorGenerator(anchor_sizes, aspect_ratios)
-    model = RetinaNet(backbone, num_classes, 224, 368, anchor_generator=anchor_generator).to(device)
+    model = RetinaNet(backbone, num_classes, 512, 704, anchor_generator=anchor_generator).to(device)
     return model

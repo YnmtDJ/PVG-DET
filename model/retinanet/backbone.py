@@ -16,8 +16,8 @@ class PyramidBackbone(nn.Module):
         blocks = [2, 2, 6, 2]
         self.out_channels = 80
         self.backbone = PyramidViG(blocks, channels)
-        self.fpn = FeaturePyramidNetwork([160, 400, 640], self.out_channels,
-                                         LastLevelP6P7(self.out_channels, self.out_channels))
+        self.fpn = FeaturePyramidNetwork([160, 400, 640], self.out_channels)
+                                         # LastLevelP6P7(self.out_channels, self.out_channels))
 
     def forward(self, x):
         x = self.backbone(x, return_intermediate=True)

@@ -14,6 +14,8 @@ def build(opts):
     device = torch.device(opts.device)
     if opts.dataset_name == "COCO":
         num_classes = 91  # because the coco dataset max label id is 90, so we set the num_classes to 91
+    elif opts.dataset_name == "VisDrone":
+        num_classes = 12  # because the visdrone dataset max label id is 11, so we set the num_classes to 12
     elif opts.dataset_name == "ImageNet":
         raise NotImplementedError("ImageNet dataset is not implemented yet.")
     else:

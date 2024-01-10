@@ -66,7 +66,7 @@ class SetCriterion(nn.Module):
         src_logits = outputs['pred_logits']  # (batch_size, num_queries, num_classes+1)
 
         target_classes_o = torch.cat([target["labels"][index_j] for target, (_, index_j) in zip(targets, indices)])
-        target_classes = torch.full(src_logits.shape[:2], self.num_classes, dtype=torch.int64, device=device)
+        target_classes = torch.full(src_logits.shape[:2], self.num_classes, dtype=torch.int32, device=device)
         idx = self._get_src_permutation_idx(indices)  # (batch_idx, src_idx) Fancy indexing
         target_classes[idx] = target_classes_o
 
@@ -179,4 +179,4 @@ class HungarianMatcher(nn.Module):
         # Split the cost matrix to get the result of match in each image
         sizes = [len(target["boxes"]) for target in targets]
         indices = [linear_sum_assignment(c[i]) for i, c in enumerate(cost.split(sizes, dim=-1))]
-        return [(torch.as_tensor(i, dtype=torch.int64), torch.as_tensor(j, dtype=torch.int64)) for i, j in indices]
+        return [(torch.as_tensor(i, dtype=torch.int32), torch.as_tensor(j, dtype=torch.int32)) for i, j in indices]
