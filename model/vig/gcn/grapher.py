@@ -2,6 +2,7 @@ import torch
 from timm.models.layers import DropPath
 from torch import nn
 
+from model.position_embedding import RelativePositionEmbedding2d
 from model.vig.gcn.edge import DenseDilatedKnnGraph
 
 
@@ -65,11 +66,13 @@ class DyGraphConv2d(nn.Module):
             self.gcn = None
             raise NotImplementedError('gcn:{} is not supported'.format(gcn))
         self.dilated_knn_graph = DenseDilatedKnnGraph(k, dilation)
+        self.relative_pos_embed = RelativePositionEmbedding2d()
 
     def forward(self, x):
         batch_size, num_dims, height, width = x.shape
+        relative_pos = self.relative_pos_embed(x)  # (batch_size, num_points, num_points)
         x = x.reshape(batch_size, num_dims, -1, 1)
-        edge_index = self.dilated_knn_graph(x)
+        edge_index = self.dilated_knn_graph(x, relative_pos)
         x = self.gcn(x, edge_index)
         return x.reshape(batch_size, -1, height, width)
 

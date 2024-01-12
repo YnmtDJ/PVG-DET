@@ -18,19 +18,20 @@ class DenseDilatedKnnGraph(nn.Module):
         self.dilation = dilation
         self.k = k
 
-    def forward(self, x):
+    def forward(self, x, relative_pos):
         x = F.normalize(x, p=2.0, dim=1)  # (batch_size, num_dims, num_points, 1)
-        edge_index = dense_knn_matrix(x, self.k * self.dilation)  # (2, batch_size, num_points, k*dilation)
+        edge_index = dense_knn_matrix(x, self.k*self.dilation, relative_pos)  # (2, batch_size, num_points, k*dilation)
         edge_index = edge_index[:, :, :, ::self.dilation]  # (2, batch_size, num_points, k)
         return edge_index
 
 
 @torch.no_grad()
-def dense_knn_matrix(x, k=16):
+def dense_knn_matrix(x, k=16, relative_pos=None):
     """
     Get KNN based on the pairwise distance.
     :param x: (batch_size, num_dims, num_points, 1)
     :param k: The number of neighbors
+    :param relative_pos: The relative position embedding (batch_size, num_points, num_points)
     :return: The indices of nearest neighbors and center - (2, batch_size, num_points, k)
     """
     x = x.transpose(2, 1).squeeze(-1)
@@ -51,7 +52,7 @@ def dense_knn_matrix(x, k=16):
     else:
         dist = torch.cdist(x, x, p=2)  # (batch_size, num_points, num_points)
         _, nn_idx = torch.topk(-dist, k=k)  # (batch_size, num_points, k)
-    center_idx = torch.arange(0, n_points, device=x.device).repeat(batch_size, k, 1).transpose(2, 1)
+    center_idx = torch.arange(0, n_points, device=x.device).expand(batch_size, k, -1).transpose(2, 1)
     return torch.stack((nn_idx, center_idx), dim=0)  # (2, batch_size, num_points, k)
 
 

@@ -29,8 +29,8 @@ def build_retinanet(opts):
     # backbone = _resnet_fpn_extractor(
     #     backbone, 5, returned_layers=[2, 3, 4], extra_blocks=LastLevelP6P7(2048, 256)
     # )
-    anchor_sizes = tuple((x, int(x * 2 ** (1.0 / 3)), int(x * 2 ** (2.0 / 3))) for x in [16, 32, 64])
+    anchor_sizes = tuple((x, int(x * 2 ** (1.0 / 3)), int(x * 2 ** (2.0 / 3))) for x in [16, 32, 64, 128, 256])
     aspect_ratios = ((0.5, 1.0, 2.0),) * len(anchor_sizes)
     anchor_generator = AnchorGenerator(anchor_sizes, aspect_ratios)
-    model = RetinaNet(backbone, num_classes, 512, 704, anchor_generator=anchor_generator).to(device)
+    model = RetinaNet(backbone, num_classes, 224, 368, anchor_generator=anchor_generator).to(device)
     return model

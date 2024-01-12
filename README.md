@@ -5,10 +5,7 @@ GCN for Object Detection
 COCO  
 PASCAL VOC  
 ImageNet  
-Object365
-
-
-
+Objects365
 
 [VisDrone](https://github.com/VisDrone/VisDrone-Dataset) Car, Person 1.5G  
 [DOTA](https://captain-whu.github.io/DOTA/dataset.html) Ariel (high resolution) 20G  
@@ -16,10 +13,13 @@ Object365
 [HRSC2016](http://www.escience.cn/people/liuzikun/DataSet.html) Ship (high resolution) 4GB  
 [Tsinghua-Tencent 100k](https://cg.cs.tsinghua.edu.cn/traffic-sign/)  Traffic-Sign 23G  
 [AI-TOD](http://m6z.cn/5MjlYk) Ariel (high resolution) 22.95G  
-[TinyPerson](http://m6z.cn/6vqF3T) Person 8.23G 
+[TinyPerson](http://m6z.cn/6vqF3T) Person 8.23G  
 [CityPersons](https://www.cityscapes-dataset.com/) Person  
 [Spotting Birds](https://github.com/IIM-TTIJ/MVA2023SmallObjectDetection4SpottingBirds) 10G  
 
 ## Model Setting
 COCO: [16, 32, 64, 128, 256], (224, 368), [80, 160, 400, 640], [2, 2, 6, 2], 80  
 VisDrone: [16, 32, 64], (512, 704), [80, 160, 400, 640], [2, 2, 6, 2], 80
+
+## TODO
+relative-pos, fast-knn, norm, experiment

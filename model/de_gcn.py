@@ -51,7 +51,7 @@ class DeGCN(nn.Module):
         pos = pos.reshape(batch_size, d_model, -1).permute(2, 0, 1)
 
         # decoder
-        query_embed = self.query_embed.unsqueeze(1).repeat(1, batch_size, 1)  # (num_queries, batch_size, d_model)
+        query_embed = self.query_embed.unsqueeze(1).expand(-1, batch_size, -1)  # (num_queries, batch_size, d_model)
         tgt = torch.zeros_like(query_embed)
         outputs = self.decoder(tgt, memory, pos=pos, query_pos=query_embed)
         outputs = outputs.permute(1, 0, 2)  # (batch_size, num_queries, d_model)
