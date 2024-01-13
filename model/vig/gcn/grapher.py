@@ -70,11 +70,26 @@ class DyGraphConv2d(nn.Module):
 
     def forward(self, x):
         batch_size, num_dims, height, width = x.shape
-        relative_pos = self.relative_pos_embed(x)  # (batch_size, height*width, height*width)
-        x = x.reshape(batch_size, num_dims, -1, 1)
-        edge_index = self.dilated_knn_graph(x, relative_pos)
-        x = self.gcn(x, edge_index)
-        return x.reshape(batch_size, -1, height, width)
+        # TODO: partition-knn
+        if height * width > 10000:
+            step = 2  # the step of partition
+            for i in range(step):
+                for j in range(step):
+                    x_part = x[:, :, i::step, j::step]  # (batch_size, num_dims, h_part, w_part)
+                    _, _, h_part, w_part = x_part.shape
+                    relative_pos = self.relative_pos_embed(x_part)  # (batch_size, h_part*w_part, h_part*w_part)
+                    x_part = x_part.reshape(batch_size, num_dims, -1, 1)
+                    edge_index = self.dilated_knn_graph(x_part, relative_pos)  # (2, batch_size, num_points, k)
+                    x_part = self.gcn(x_part, edge_index)
+                    x_part = x_part.reshape(batch_size, -1, h_part, w_part)
+                    x[:, :, i::step, j::step] = x_part
+            return x
+        else:
+            relative_pos = self.relative_pos_embed(x)  # (batch_size, height*width, height*width)
+            x = x.reshape(batch_size, num_dims, -1, 1)
+            edge_index = self.dilated_knn_graph(x, relative_pos)  # (2, batch_size, num_points, k)
+            x = self.gcn(x, edge_index)
+            return x.reshape(batch_size, -1, height, width)
 
 
 class MRConv2d(nn.Module):
