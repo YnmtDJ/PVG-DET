@@ -36,7 +36,7 @@ class ViG(nn.Module):
         if use_dilation:
             self.backbone = nn.Sequential(*[
                 nn.Sequential(
-                    Grapher(d_model, n_knn[i], min(i//4+1, max_dilation), gcn, act, drop_probs[i]),
+                    Grapher(d_model, n_knn[i], min(i//4+1, max_dilation), None, gcn, act, drop_probs[i]),
                     FFN(d_model, d_model*4, d_model, act, drop_probs[i])
                 )
                 for i in range(n_blocks)
@@ -44,7 +44,7 @@ class ViG(nn.Module):
         else:
             self.backbone = nn.Sequential(*[
                 nn.Sequential(
-                    Grapher(d_model, n_knn[i], 1, gcn, act, drop_probs[i]),
+                    Grapher(d_model, n_knn[i], 1, None, gcn, act, drop_probs[i]),
                     FFN(d_model, d_model*4, d_model, act, drop_probs[i])
                 )
                 for i in range(n_blocks)
@@ -84,6 +84,8 @@ class PyramidViG(nn.Module):
         drop_probs = [x.item() for x in torch.linspace(0, drop_prob, n_blocks)]  # stochastic depth decay rule
         n_knn = [int(x.item()) for x in torch.linspace(k, k, n_blocks)]  # number of neighbors
         max_dilation = (min_size[0] // 2**(1+len(blocks))) * (min_size[1] // 2**(1+len(blocks))) // max(n_knn)
+        n_step = [1]*len(blocks)  # the step of partition
+        n_step[0] = 2  # only the first layer is partitioned
 
         self.stem = Stem4(3, channels[0], act)
         self.pos_embed = PositionEmbedding2d()
@@ -102,7 +104,7 @@ class PyramidViG(nn.Module):
             for j in range(blocks[i]):
                 block.append(
                     nn.Sequential(
-                        Grapher(channels[i], n_knn[idx], min(idx//4+1, max_dilation), gcn, act, drop_probs[idx]),
+                        Grapher(channels[i], n_knn[idx], min(idx//4+1, max_dilation), n_step[i], gcn, act, drop_probs[idx]),
                         FFN(channels[i], channels[i]*4, channels[i], act, drop_probs[idx])
                     )
                 )

@@ -10,11 +10,12 @@ class Grapher(nn.Module):
     """
     Grapher module with graph convolution and fc layers
     """
-    def __init__(self, in_ch, k=9, dilation=1, gcn='MRConv2d', act=nn.GELU(), drop_prob=0.1):
+    def __init__(self, in_ch, k=9, dilation=1, step=1, gcn='MRConv2d', act=nn.GELU(), drop_prob=0.1):
         """
         :param in_ch: The number of input channels.
         :param k: The number of neighbors.
         :param dilation: The dilation rate.
+        :param step: The step of partition. If step=1 or none, it means no partition.
         :param gcn: The graph convolution type. (MRConv2d, EdgeConv2d, GraphSAGE, GINConv2d)
         :param act: The activation function.
         :param drop_prob: DropPath probability.
@@ -24,7 +25,7 @@ class Grapher(nn.Module):
             nn.Conv2d(in_ch, in_ch, 1, stride=1, padding=0),
             nn.BatchNorm2d(in_ch),
         )
-        self.graph_conv = DyGraphConv2d(in_ch, in_ch*2, k, dilation, gcn, act)
+        self.graph_conv = DyGraphConv2d(in_ch, in_ch*2, k, dilation, step, gcn, act)
         self.fc2 = nn.Sequential(
             nn.Conv2d(in_ch*2, in_ch, 1, stride=1, padding=0),
             nn.BatchNorm2d(in_ch),
@@ -44,16 +45,19 @@ class DyGraphConv2d(nn.Module):
     """
     Dynamic graph convolution layer
     """
-    def __init__(self, in_ch, out_ch, k=9, dilation=1, gcn="MRConv2d", act=nn.GELU()):
+    def __init__(self, in_ch, out_ch, k=9, dilation=1, step=1, gcn="MRConv2d", act=nn.GELU()):
         """
         :param in_ch: The number of input channels.
         :param out_ch: The number of output channels.
         :param k: The number of neighbors.
         :param dilation: The dilation rate.
+        :param step: The step of partition. If step=1 or none, it means no partition.
         :param gcn: Graph convolution type. (MRConv2d, EdgeConv2d, GraphSAGE, GINConv2d)
         :param act: The activation function.
         """
         super(DyGraphConv2d, self).__init__()
+        self.out_ch = out_ch
+        self.step = step
         if gcn == 'MRConv2d':
             self.gcn = MRConv2d(in_ch, out_ch, act)
         elif gcn == 'EdgeConv2d':
@@ -69,24 +73,25 @@ class DyGraphConv2d(nn.Module):
         self.relative_pos_embed = RelativePositionEmbedding2d()
 
     def forward(self, x):
-        batch_size, num_dims, height, width = x.shape
-        # TODO: partition-knn
-        if height * width > 10000:
-            step = 2  # the step of partition
+        batch_size, in_ch, height, width = x.shape
+        # partition-knn implementation
+        if self.step is not None and self.step > 1:
+            x_merge = torch.zeros([batch_size, self.out_ch, height, width], device=x.device)
+            step = self.step  # the step of partition
             for i in range(step):
                 for j in range(step):
-                    x_part = x[:, :, i::step, j::step]  # (batch_size, num_dims, h_part, w_part)
+                    x_part = x[:, :, i::step, j::step]  # (batch_size, in_ch, h_part, w_part)
                     _, _, h_part, w_part = x_part.shape
                     relative_pos = self.relative_pos_embed(x_part)  # (batch_size, h_part*w_part, h_part*w_part)
-                    x_part = x_part.reshape(batch_size, num_dims, -1, 1)
+                    x_part = x_part.reshape(batch_size, in_ch, -1, 1)
                     edge_index = self.dilated_knn_graph(x_part, relative_pos)  # (2, batch_size, num_points, k)
                     x_part = self.gcn(x_part, edge_index)
                     x_part = x_part.reshape(batch_size, -1, h_part, w_part)
-                    x[:, :, i::step, j::step] = x_part
-            return x
+                    x_merge[:, :, i::step, j::step] += x_part
+            return x_merge
         else:
             relative_pos = self.relative_pos_embed(x)  # (batch_size, height*width, height*width)
-            x = x.reshape(batch_size, num_dims, -1, 1)
+            x = x.reshape(batch_size, in_ch, -1, 1)
             edge_index = self.dilated_knn_graph(x, relative_pos)  # (2, batch_size, num_points, k)
             x = self.gcn(x, edge_index)
             return x.reshape(batch_size, -1, height, width)
