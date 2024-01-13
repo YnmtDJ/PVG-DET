@@ -70,7 +70,7 @@ class DyGraphConv2d(nn.Module):
 
     def forward(self, x):
         batch_size, num_dims, height, width = x.shape
-        relative_pos = self.relative_pos_embed(x)  # (batch_size, num_points, num_points)
+        relative_pos = self.relative_pos_embed(x)  # (batch_size, height*width, height*width)
         x = x.reshape(batch_size, num_dims, -1, 1)
         edge_index = self.dilated_knn_graph(x, relative_pos)
         x = self.gcn(x, edge_index)

@@ -22,4 +22,4 @@ COCO: [16, 32, 64, 128, 256], (224, 368), [80, 160, 400, 640], [2, 2, 6, 2], 80
 VisDrone: [16, 32, 64], (512, 704), [80, 160, 400, 640], [2, 2, 6, 2], 80
 
 ## TODO
-relative-pos, fast-knn, norm, experiment
+fast-knn, norm, experiment
