@@ -4,7 +4,7 @@ from torch import nn
 from model.vig.vig import Stem16
 from model.common import MLP
 from model.detr.transformer import TransformerDecoderLayer, TransformerDecoder
-from model.position_embedding import PositionEmbedding2d
+from model.pos_embed import PositionEmbedding2d
 from model.vig.vig import ViG
 
 

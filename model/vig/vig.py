@@ -5,7 +5,7 @@ import torch
 from torch import nn
 
 from model.common import FFN
-from model.position_embedding import PositionEmbedding2d
+from model.pos_embed import PositionEmbedding2d
 from model.vig.gcn.grapher import Grapher
 
 

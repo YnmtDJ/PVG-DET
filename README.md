@@ -7,7 +7,7 @@ PASCAL VOC
 ImageNet  
 Objects365
 
-[VisDrone](https://github.com/VisDrone/VisDrone-Dataset) Car, Person 1.5G  
+[VisDrone](https://github.com/VisDrone/VisDrone-Dataset) Car, Person 1.5G image_size: (540, 960) (765, 1360) (1080, 1920) (1060, 1400)  
 [DOTA](https://captain-whu.github.io/DOTA/dataset.html) Ariel (high resolution) 20G  
 [xview](http://xviewdataset.org/) overhead imagery 33G  
 [HRSC2016](http://www.escience.cn/people/liuzikun/DataSet.html) Ship (high resolution) 4GB  
@@ -19,7 +19,7 @@ Objects365
 
 ## Model Setting
 COCO: [16, 32, 64, 128, 256], (224, 368), [80, 160, 400, 640], [2, 2, 6, 2], 80  
-VisDrone: [16, 32, 64], (512, 704), [80, 160, 400, 640], [2, 2, 6, 2], 80
+VisDrone: [8, 16, 32, 64, 128], ([512, 544, 576, 608, 640, 672, 704, 736, 768, 800], 1333), [80, 160, 400, 640], [2, 2, 6, 2], 80
 
 ## TODO
-fast-knn, norm, experiment
+norm, experiment

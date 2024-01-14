@@ -90,11 +90,11 @@ class SetCriterion(nn.Module):
                                   for target, (_, index_j) in zip(targets, indices)])  # (num_target_boxes, 4)
         num_boxes = target_boxes.shape[0]
 
-        loss_bbox = F.l1_loss(src_boxes, target_boxes, reduction='none')
+        loss_bbox = F.l1_loss(box_convert(src_boxes, 'cxcywh', 'xyxy'), target_boxes, reduction='none')
 
         loss_giou = 1 - torch.diag(generalized_box_iou(
             box_convert(src_boxes, 'cxcywh', 'xyxy'),
-            box_convert(target_boxes, 'cxcywh', 'xyxy')
+            target_boxes
         ))
         return loss_bbox.sum() / num_boxes, loss_giou.sum() / num_boxes
 
@@ -164,12 +164,13 @@ class HungarianMatcher(nn.Module):
         cost_class = -out_prob[:, tgt_ids]  # (batch_size * num_queries, num_target_boxes)
 
         # Compute the L1 cost between boxes
-        cost_bbox = torch.cdist(out_bbox, tgt_bbox, p=1)  # (batch_size * num_queries, num_target_boxes)
+        # (batch_size * num_queries, num_target_boxes)
+        cost_bbox = torch.cdist(box_convert(out_bbox, 'cxcywh', 'xyxy'), tgt_bbox, p=1)
 
         # Compute the giou cost between boxes
         # (batch_size * num_queries, num_target_boxes)
         cost_giou = -generalized_box_iou(box_convert(out_bbox, 'cxcywh', 'xyxy'),
-                                         box_convert(tgt_bbox, 'cxcywh', 'xyxy'))
+                                         tgt_bbox)
 
         # Final cost matrix
         # (batch_size * num_queries, num_target_boxes)

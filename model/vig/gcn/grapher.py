@@ -2,7 +2,7 @@ import torch
 from timm.models.layers import DropPath
 from torch import nn
 
-from model.position_embedding import RelativePositionEmbedding2d
+from model.pos_embed import RelativePositionEmbedding2d
 from model.vig.gcn.edge import DenseDilatedKnnGraph
 
 
