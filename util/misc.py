@@ -103,7 +103,7 @@ def fix_boxes(boxes: tv_tensors.BoundingBoxes):
     :param boxes: The boxes to be fixed.
     """
     num, _ = boxes.shape
-    eps = 2*1e-4
+    eps = 1
     if boxes.format == tv_tensors.BoundingBoxFormat.XYXY:
         x_idx = torch.eq(boxes[:, 0], boxes[:, 2])
         y_idx = torch.eq(boxes[:, 1], boxes[:, 3])

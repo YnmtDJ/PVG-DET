@@ -58,3 +58,24 @@ class FFN(nn.Module):
         x = self.fc2(x)
         x = self.drop_path(x) + shortcut
         return x
+
+
+class BasicConv(nn.Module):
+    """
+    Basic Convolution Block, including Convolution, BatchNorm2d, and activation function.
+    """
+    def __init__(self, in_ch, out_ch, act=nn.GELU()):
+        """
+        :param in_ch: The number of input channels.
+        :param out_ch: The number of output channels.
+        :param act: The activation function.
+        """
+        super(BasicConv, self).__init__()
+        self.conv = nn.Sequential(
+            nn.Conv2d(in_ch, out_ch, 1, groups=4),
+            nn.BatchNorm2d(out_ch),
+            act,
+        )
+
+    def forward(self, x):
+        return self.conv(x)

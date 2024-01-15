@@ -2,6 +2,7 @@ import torch
 from timm.models.layers import DropPath
 from torch import nn
 
+from model.common import BasicConv
 from model.pos_embed import RelativePositionEmbedding2d
 from model.vig.gcn.edge import DenseDilatedKnnGraph
 
@@ -223,24 +224,3 @@ def batched_index_select(x, idx):
     feature = x.reshape(batch_size * num_points, -1)[idx, :]
     feature = feature.reshape(batch_size, num_points, k, num_dims).permute(0, 3, 1, 2)
     return feature
-
-
-class BasicConv(nn.Module):
-    """
-    Basic Convolution Block, including Convolution, BatchNorm2d, and activation function.
-    """
-    def __init__(self, in_ch, out_ch, act=nn.GELU()):
-        """
-        :param in_ch: The number of input channels.
-        :param out_ch: The number of output channels.
-        :param act: The activation function.
-        """
-        super(BasicConv, self).__init__()
-        self.conv = nn.Sequential(
-            nn.Conv2d(in_ch, out_ch, 1, groups=4),
-            nn.BatchNorm2d(out_ch),
-            act,
-        )
-
-    def forward(self, x):
-        return self.conv(x)
