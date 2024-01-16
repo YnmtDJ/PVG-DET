@@ -219,5 +219,6 @@ class VisDroneDetection(Dataset):
 if __name__ == "__main__":
     # demo for the create_dataset()
     dataset_train, dataset_val = create_dataset("./", "VisDrone")
-    image, target = dataset_train[0]
-    show_image(image, target, "xyxy")
+    for i in range(len(dataset_train)):
+        image, target = dataset_train[i]
+        show_image(image, target, "xyxy")

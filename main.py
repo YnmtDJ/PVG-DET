@@ -1,5 +1,7 @@
+import math
 import time
 
+from timm.scheduler import create_scheduler, CosineLRScheduler, StepLRScheduler
 import torch
 from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
@@ -28,7 +30,21 @@ if __name__ == "__main__":
     # prepare the model, criterion, optimizer, lr_scheduler, writer
     model, criterion = build(opts)
     optimizer = torch.optim.AdamW(model.parameters(), lr=opts.lr, weight_decay=opts.weight_decay)
-    lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer, opts.lr_drop)
+    # lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer, opts.lr_drop)
+
+    warm_up_epochs = 2
+
+
+    def lr_lambda(cur_epoch: int):
+        if cur_epoch < warm_up_epochs:  # warm-up
+            return (cur_epoch + 1) / warm_up_epochs
+        else:
+            0.5 * (math.cos((cur_epoch - warm_up_epochs) / (opts.epochs - warm_up_epochs) * math.pi) + 1)
+
+
+    lr_scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, lr_lambda)
+
+
     writer = SummaryWriter(opts.log_dir)
 
     # load the parameters to continue training
