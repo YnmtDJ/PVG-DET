@@ -11,12 +11,11 @@ def get_opts():
     # model parameters
 
     # training parameters
-    parser.add_argument("--batch_size", type=int, default=2, help="batch size")
-    parser.add_argument('--epochs', type=int, default=50, help="number of training epochs")
+    parser.add_argument("--batch_size", type=int, default=8, help="batch size")
+    parser.add_argument('--epochs', type=int, default=12, help="number of training epochs")
     parser.add_argument("--start_epoch", type=int, default=0, help='start epoch')
-    parser.add_argument('--lr', type=float, default=1e-4, help="learning rate")
-    parser.add_argument('--weight_decay', type=float, default=1e-2, help="optimizer weight decay")
-    parser.add_argument('--lr_drop', type=int, default=40, help="learning rate decay step")
+    parser.add_argument("--warm_up_epochs", type=int, default=2, help="number of warm-up epochs")
+    parser.add_argument('--lr', type=float, default=1e-2, help="learning rate")
     parser.add_argument('--device', type=str, default='cuda', help='device to use for training / testing')
     parser.add_argument('--checkpoint_path', type=str, required=True, help="the path to save the checkpoint.")
     parser.add_argument('--resume', type=str, help="the path to the checkpoint to resume training from, "

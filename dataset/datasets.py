@@ -3,7 +3,7 @@ import time
 
 import torch
 import torchvision
-import torchvision.transforms.v2.functional as F
+import torchvision.transforms.v2.functional as v2F
 from PIL import Image
 from torch.utils.data import Dataset
 from torchvision import tv_tensors
@@ -100,7 +100,7 @@ class CocoDetection(torchvision.datasets.CocoDetection):
         return img, target
 
     def wrap_dataset_for_transforms_v2(self, image, target):
-        canvas_size = tuple(F.get_size(image))
+        canvas_size = tuple(v2F.get_size(image))
 
         batched_target = list_of_dicts_to_dict_of_lists(target['annotations'])
         target = {"image_id": target["image_id"], "origin_size": canvas_size}
@@ -109,7 +109,7 @@ class CocoDetection(torchvision.datasets.CocoDetection):
             bbox = batched_target["bbox"]
         else:
             bbox = torch.empty((0, 4))
-        target["boxes"] = F.convert_bounding_box_format(
+        target["boxes"] = v2F.convert_bounding_box_format(
             tv_tensors.BoundingBoxes(
                 bbox,
                 format=tv_tensors.BoundingBoxFormat.XYWH,
@@ -187,6 +187,9 @@ class VisDroneDetection(Dataset):
                     # split the line by ',' and remove the '\n' at the end of the line.
                     data = line.strip().split(',')[:8]
                     left, top, width, height, score, category, truncation, occlusion = [float(val) for val in data]
+                    # TODO: delete it?
+                    if category == 0 or category == 11:  # ignore the ignored regions and others
+                        continue
                     boxes = torch.cat([boxes, torch.tensor([[left, top, width, height]], dtype=torch.float32)])
                     labels = torch.cat([labels, torch.tensor([category], dtype=torch.int32)])
                     scores = torch.cat([scores, torch.tensor([score], dtype=torch.float32)])
@@ -201,10 +204,10 @@ class VisDroneDetection(Dataset):
         print("Done (t={:0.2f}s)".format(end_time - start_time))
 
     def wrap_dataset_for_transforms_v2(self, image, target):
-        canvas_size = tuple(F.get_size(image))
+        canvas_size = tuple(v2F.get_size(image))
 
         target["origin_size"] = canvas_size
-        target["boxes"] = F.convert_bounding_box_format(
+        target["boxes"] = v2F.convert_bounding_box_format(
             tv_tensors.BoundingBoxes(
                 target["boxes"],
                 format=tv_tensors.BoundingBoxFormat.XYWH,

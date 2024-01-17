@@ -61,10 +61,11 @@ class PyramidViG(nn.Module):
     Vision GNN: An Image is Worth Graph of Nodes. (With pyramid)
     https://github.com/huawei-noah/Efficient-AI-Backbones/tree/master/vig_pytorch
     """
-    def __init__(self, blocks: List = None, channels: List = None, k=9, gcn='MRConv2d', act=nn.GELU(), drop_prob=0.1):
+    def __init__(self, blocks: List = None, channels: List = None, steps=None, k=9, gcn='MRConv2d', act=nn.GELU(), drop_prob=0.1):
         """
         :param blocks: The number of blocks in each layer.
         :param channels: The number of channels in each layer.
+        :param steps: The number of partition step in each layer.
         :param k: The number of neighbors.
         :param gcn: The graph convolution type. (MRConv2d, EdgeConv2d, GraphSAGE, GINConv2d)
         :param act: The activation function.
@@ -73,9 +74,12 @@ class PyramidViG(nn.Module):
         super(PyramidViG, self).__init__()
         max_size = (800, 800)  # the maximum size of the input image
         min_size = (224, 224)  # the minimum size of the input image
-        assert len(blocks) == len(channels)  # the length of blocks and channels must be equal
+        # the length of blocks, channels and steps must be equal
+        assert len(blocks) == len(channels) and len(blocks) == len(steps)
         if channels is None:
             channels = [48, 96, 240, 384]
+        if steps is None:
+            steps = [4, 2, 1, 1]
         if blocks is None:
             blocks = [2, 2, 6, 2]
         self.blocks = blocks
@@ -84,8 +88,6 @@ class PyramidViG(nn.Module):
         drop_probs = [x.item() for x in torch.linspace(0, drop_prob, n_blocks)]  # stochastic depth decay rule
         n_knn = [int(x.item()) for x in torch.linspace(k, k, n_blocks)]  # number of neighbors
         max_dilation = (min_size[0] // 2**(1+len(blocks))) * (min_size[1] // 2**(1+len(blocks))) // max(n_knn)
-        n_step = [1]*len(blocks)  # the step of partition
-        n_step[0] = 2  # only the first layer is partitioned
 
         self.stem = Stem4(3, channels[0], act)
         self.pos_embed = PositionEmbedding2d()
@@ -104,7 +106,7 @@ class PyramidViG(nn.Module):
             for j in range(blocks[i]):
                 block.append(
                     nn.Sequential(
-                        Grapher(channels[i], n_knn[idx], min(idx//4+1, max_dilation), n_step[i], gcn, act, drop_probs[idx]),
+                        Grapher(channels[i], n_knn[idx], min(idx//4+1, max_dilation), steps[i], gcn, act, drop_probs[idx]),
                         FFN(channels[i], channels[i]*4, channels[i], act, drop_probs[idx])
                     )
                 )

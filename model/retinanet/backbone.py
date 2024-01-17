@@ -14,8 +14,9 @@ class PyramidBackbone(nn.Module):
         super(PyramidBackbone, self).__init__()
         channels = [80, 160, 400, 640]
         blocks = [2, 2, 6, 2]
+        steps = [4, 2, 1, 1]
         self.out_channels = 80
-        self.backbone = PyramidViG(blocks, channels)
+        self.backbone = PyramidViG(blocks, channels, steps)
         self.fpn = FeaturePyramidNetwork([160, 400, 640], self.out_channels,
                                          LastLevelP6P7(self.out_channels, self.out_channels))
 

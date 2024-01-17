@@ -1,3 +1,4 @@
+import math
 import os
 from collections import defaultdict
 
@@ -71,7 +72,7 @@ def override_options(opts, checkpoint):
     :return:
     """
     # the keys need to be overridden
-    keys = {'dataset_root', 'dataset_name', 'batch_size', 'lr', 'weight_decay', 'lr_drop', 'log_dir'}
+    keys = {'dataset_root', 'dataset_name', 'batch_size', 'epochs', 'warm_up_epochs', 'lr'}
     for key in keys:
         setattr(opts, key, getattr(checkpoint['opts'], key))
 
@@ -114,3 +115,22 @@ def fix_boxes(boxes: tv_tensors.BoundingBoxes):
         raise ValueError("Invalid bounding box format.")
     boxes[:, 2][x_idx] += eps
     boxes[:, 3][y_idx] += eps
+
+
+def build_lr_scheduler(optimizer, warm_up_epochs, epochs):
+    """
+    Build the learning rate scheduler.
+    :param optimizer: The optimizer.
+    :param warm_up_epochs: The number of warm-up epochs.
+    :param epochs: The total number of epochs.
+    :return: The learning rate scheduler.
+    """
+    assert warm_up_epochs < epochs, "The number of warm-up epochs must be less than the total number of epochs."
+
+    def lr_lambda(cur_epoch: int):
+        if cur_epoch < warm_up_epochs:  # warm-up
+            return (cur_epoch + 1) / (warm_up_epochs + 1)
+        else:
+            0.5 * (math.cos((cur_epoch - warm_up_epochs) / (epochs - warm_up_epochs) * math.pi) + 1)
+
+    return torch.optim.lr_scheduler.LambdaLR(optimizer, lr_lambda)
