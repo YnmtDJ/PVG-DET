@@ -10,7 +10,7 @@ def create_transform():
     transform_train = v2.Compose([
         v2.ToImage(),
         v2.RandomHorizontalFlip(),
-        v2.RandomIoUCrop(),
+        v2.RandomIoUCrop(min_scale=0.7),
         v2.SanitizeBoundingBoxes(),
         v2.ToDtype(torch.float32, scale=True)
     ])

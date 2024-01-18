@@ -28,7 +28,7 @@ if __name__ == "__main__":
     # prepare the model, criterion, optimizer, lr_scheduler, writer
     model, criterion = build(opts)
     optimizer = torch.optim.Adam(model.parameters(), lr=opts.lr)
-    lr_scheduler = build_lr_scheduler(optimizer, warm_up_epochs=opts.warm_up_epochs, epochs=opts.epochs)
+    lr_scheduler = build_lr_scheduler(optimizer, warmup_epochs=opts.warmup_epochs, epochs=opts.epochs)
     writer = SummaryWriter(opts.log_dir)
 
     # load the parameters to continue training

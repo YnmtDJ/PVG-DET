@@ -187,9 +187,6 @@ class VisDroneDetection(Dataset):
                     # split the line by ',' and remove the '\n' at the end of the line.
                     data = line.strip().split(',')[:8]
                     left, top, width, height, score, category, truncation, occlusion = [float(val) for val in data]
-                    # TODO: delete it?
-                    if category == 0 or category == 11:  # ignore the ignored regions and others
-                        continue
                     boxes = torch.cat([boxes, torch.tensor([[left, top, width, height]], dtype=torch.float32)])
                     labels = torch.cat([labels, torch.tensor([category], dtype=torch.int32)])
                     scores = torch.cat([scores, torch.tensor([score], dtype=torch.float32)])
