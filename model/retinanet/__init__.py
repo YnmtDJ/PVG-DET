@@ -1,8 +1,12 @@
+from functools import partial
+
 import torch
+from torch import nn
 from torchvision.models import resnet50
 from torchvision.models.detection import RetinaNet
 from torchvision.models.detection.anchor_utils import AnchorGenerator
 from torchvision.models.detection.backbone_utils import _resnet_fpn_extractor
+from torchvision.models.detection.retinanet import RetinaNetHead
 from torchvision.ops.feature_pyramid_network import LastLevelP6P7
 
 from model.retinanet.backbone import PyramidBackbone
@@ -24,14 +28,21 @@ def build_retinanet(opts):
     else:
         num_classes = 20  # default num_classes
 
-    backbone = PyramidBackbone()
-    # backbone = resnet50()
-    # backbone = _resnet_fpn_extractor(
-    #     backbone, 5, returned_layers=[2, 3, 4], extra_blocks=LastLevelP6P7(2048, 256)
-    # )
-    anchor_sizes = tuple((x, int(x * 2 ** (1.0 / 3)), int(x * 2 ** (2.0 / 3))) for x in [16, 32, 64, 128, 256])
+    # backbone = PyramidBackbone()
+    backbone = resnet50()
+    backbone = _resnet_fpn_extractor(
+        backbone, 5, returned_layers=[2, 3, 4], extra_blocks=LastLevelP6P7(2048, 256)
+    )
+    anchor_sizes = tuple((x, int(x * 2 ** (1.0 / 3)), int(x * 2 ** (2.0 / 3))) for x in [8, 16, 32, 64, 128])
     aspect_ratios = ((0.5, 1.0, 2.0),) * len(anchor_sizes)
     anchor_generator = AnchorGenerator(anchor_sizes, aspect_ratios)
+    head = RetinaNetHead(
+        backbone.out_channels,
+        anchor_generator.num_anchors_per_location()[0],
+        num_classes,
+        norm_layer=partial(nn.GroupNorm, 32),
+    )
+    head.regression_head._loss_type = "giou"
     model = RetinaNet(backbone, num_classes, [512, 544, 576, 608, 640, 672, 704, 736, 768, 800], 1333,
-                      anchor_generator=anchor_generator).to(device)
+                      anchor_generator=anchor_generator, head=head, score_thresh=0.2).to(device)
     return model
