@@ -1,35 +1,21 @@
-import math
-import time
-from argparse import Namespace
-from collections import Counter
-
 import torch
-from matplotlib import pyplot as plt
-from torchvision.models.detection.transform import GeneralizedRCNNTransform
-from torchvision.ops import box_convert
-from torchvision.tv_tensors import BoundingBoxes, BoundingBoxFormat, Image
-import torchvision.transforms.v2 as v2
 from torch.utils.data import DataLoader
-from torch.utils.tensorboard import SummaryWriter
-from tqdm import tqdm
 
 from dataset.datasets import create_dataset
-from dataset.transforms import create_transform
-from evaluate import evaluate
-from model.vig.gcn.edge import pairwise_distance
-from model.vig.vig import ViG
-from util.misc import collate_fn, override_options, save_checkpoint, show_image
-from model import build, build_retinanet
+from model import build_retinanet
+from util.misc import collate_fn
 from util.option import get_opts
 
 
 def func():
     opts = get_opts()  # get the options
-    opts.device = "cpu"
+    opts.device = "cuda"
+    device = torch.device(opts.device)
     opts.dataset_name = "VisDrone"
+    checkpoint = torch.load("c:\\users\\16243\\Downloads\\vig_retinanet.pth")
     model = build_retinanet(opts)
-    model.load_state_dict(torch.load("c:\\users\\hu.nan\\Downloads\\vig_retinanet (1).pth", map_location="cpu")['model'])
-    model.eval()
+    model.load_state_dict(checkpoint['model'])
+    model.train()
     # demo for the create_dataset()
     dataset_train, dataset_val = create_dataset("./dataset", "VisDrone")
     dataloader_train = DataLoader(dataset_train, batch_size=4, shuffle=True, drop_last=False, collate_fn=collate_fn)
@@ -37,11 +23,20 @@ def func():
 
     with torch.no_grad():
         for i, (images, targets) in enumerate(dataloader_train):
-            predictions = model(images)
-            for j in range(4):
-                image = images[j]
-                prediction = predictions[j]
-                show_image(image, prediction, "xyxy")
+
+            images = [image.to(device) for image in images]
+            targets = [{k: v.to(device) if hasattr(v, 'to') else v for k, v in target.items()} for target in targets]
+
+            losses = model(images, targets)
+            loss_ce = losses['classification']
+            loss_bbox = losses['bbox_regression']
+            print("loss_ce: ", loss_ce.item())
+            print("loss_bbox: ", loss_bbox.item())
+            print("---------------------------")
+            # for j in range(4):
+                # image = images[j]
+                # prediction = predictions[j]
+                # show_image(image, prediction, "xyxy")
 
 
 if __name__ == '__main__':

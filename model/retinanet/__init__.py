@@ -44,5 +44,5 @@ def build_retinanet(opts):
     )
     head.regression_head._loss_type = "giou"
     model = RetinaNet(backbone, num_classes, [512, 544, 576, 608, 640, 672, 704, 736, 768, 800], 1333,
-                      anchor_generator=anchor_generator, head=head, score_thresh=0.2).to(device)
+                      anchor_generator=anchor_generator, head=head, score_thresh=0.05).to(device)
     return model
