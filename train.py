@@ -15,6 +15,7 @@ def train_one_epoch(model, criterion, dataloader, optimizer, epoch, writer):
     device = next(model.parameters()).device
     model.train()
     criterion.train()
+    avg_loss, avg_loss_ce, avg_loss_bbox = 0, 0, 0
     for i, (images, targets) in enumerate(tqdm(dataloader)):
         if i % 200 == 0 and torch.cuda.is_available():  # TODO: really need it?
             torch.cuda.empty_cache()
@@ -33,8 +34,13 @@ def train_one_epoch(model, criterion, dataloader, optimizer, epoch, writer):
         loss.backward()
         optimizer.step()
 
-        # write the loss to tensorboard
-        writer.add_scalar("train/loss", loss.item(), epoch * len(dataloader) + i)
-        writer.add_scalar("train/loss_ce", loss_ce.item(), epoch * len(dataloader) + i)
-        writer.add_scalar("train/loss_bbox", loss_bbox.item(), epoch * len(dataloader) + i)
-        # writer.add_scalar("train/loss_giou", loss_giou.item(), epoch * len(dataloader) + i)
+        # update the average loss
+        avg_loss = (avg_loss * i + loss.item()) / (i + 1)
+        avg_loss_ce = (avg_loss_ce * i + loss_ce.item()) / (i + 1)
+        avg_loss_bbox = (avg_loss_bbox * i + loss_bbox.item()) / (i + 1)
+
+    # write the loss to tensorboard
+    writer.add_scalar("train/loss", avg_loss, epoch)
+    writer.add_scalar("train/loss_ce", avg_loss_ce, epoch)
+    writer.add_scalar("train/loss_bbox", avg_loss_bbox, epoch)
+    # writer.add_scalar("train/loss_giou", loss_giou.item(), epoch)
