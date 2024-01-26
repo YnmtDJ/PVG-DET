@@ -10,7 +10,7 @@ from tqdm import tqdm
 
 from dataset.datasets import create_dataset
 from model import build_retinanet
-from util.misc import collate_fn, build_lr_scheduler
+from util.misc import collate_fn, build_lr_scheduler, show_image
 from util.option import get_opts
 from util.visdrone_eval import eval_det
 
@@ -60,7 +60,7 @@ def fun1():
     opts.device = "cpu"
     device = torch.device(opts.device)
     opts.dataset_name = "VisDrone"
-    checkpoint = torch.load("c:\\users\\hu.nan\\Downloads\\vig_retinanet.pth", map_location='cpu')
+    checkpoint = torch.load("checkpoint/visdrone/2024_01_24.pth", map_location='cpu')
     model = build_retinanet(opts)
     model.load_state_dict(checkpoint['model'])
     model.eval()
@@ -108,8 +108,8 @@ def func2():
         target = targets[0]
         height, width = target['origin_size']
         boxes = box_convert(target["boxes"], 'xyxy', 'xywh')
-        widths.extend((boxes[:, 2] / width).tolist())
-        heights.extend((boxes[:, 3] / height).tolist())
+        widths.extend([round(val, 4)for val in (boxes[:, 2] / width).tolist()])
+        heights.extend([round(val, 4)for val in (boxes[:, 3] / height).tolist()])
 
     counts = Counter(widths)
     # 将Counter结果转换为列表形式
@@ -138,5 +138,28 @@ def func2():
     plt.show()
 
 
+def func3():
+    opts = get_opts()  # get the options
+    opts.device = "cpu"
+    device = torch.device(opts.device)
+    opts.dataset_name = "VisDrone"
+
+    model = torch.load("c:\\users\\hu.nan\\Downloads\\model.pth", map_location='cpu')
+    model.eval()
+
+    dataset_train, dataset_val = create_dataset("./dataset", "VisDrone")
+    dataloader_train = DataLoader(dataset_train, batch_size=4, shuffle=False, drop_last=False, collate_fn=collate_fn)
+
+    with torch.no_grad():
+        for i, (images, targets) in enumerate(dataloader_train):
+            images = [image.to(device) for image in images]
+            targets = [{k: v.to(device) if hasattr(v, 'to') else v for k, v in target.items()} for target in targets]
+            predictions = model(images)
+            for j in range(4):
+                image = images[j]
+                prediction = predictions[j]
+                show_image(image, prediction, "xyxy")
+
+
 if __name__ == '__main__':
-    func2()
+    func3()

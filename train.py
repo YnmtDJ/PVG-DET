@@ -2,13 +2,14 @@ import torch
 from tqdm import tqdm
 
 
-def train_one_epoch(model, criterion, dataloader, optimizer, epoch, writer):
+def train_one_epoch(model, criterion, dataloader, optimizer, lr_scheduler, epoch, writer):
     """
     Train the model for one epoch.
     :param model: The detection model.
     :param criterion: The criterion for calculating the loss.
     :param dataloader: The training dataloader.
     :param optimizer: The optimizer for training model.
+    :param lr_scheduler: The learning rate scheduler.
     :param epoch: Current epoch.
     :param writer: SummaryWriter for writing the log.
     """
@@ -33,6 +34,7 @@ def train_one_epoch(model, criterion, dataloader, optimizer, epoch, writer):
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
+        lr_scheduler.step()  # update the learning rate
 
         # update the average loss
         avg_loss = (avg_loss * i + loss.item()) / (i + 1)
