@@ -150,9 +150,6 @@ class VisDroneDetection(Dataset):
         image, target = self.wrap_dataset_for_transforms_v2(image, target)
         if self.transforms is not None:
             image, target = self.transforms(image, target)
-
-        fix_boxes(target["boxes"])  # TODO: really need this?
-
         return image, target
 
     def __len__(self):
@@ -187,6 +184,10 @@ class VisDroneDetection(Dataset):
                     # split the line by ',' and remove the '\n' at the end of the line.
                     data = line.strip().split(',')[:8]
                     left, top, width, height, score, category, truncation, occlusion = [float(val) for val in data]
+
+                    if width < 1 or height < 1:  # TODO: remove line gt box
+                        continue
+
                     boxes = torch.cat([boxes, torch.tensor([[left, top, width, height]], dtype=torch.float32)])
                     labels = torch.cat([labels, torch.tensor([category], dtype=torch.int32)])
                     scores = torch.cat([scores, torch.tensor([score], dtype=torch.float32)])

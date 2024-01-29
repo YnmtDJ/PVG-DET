@@ -28,7 +28,7 @@ if __name__ == "__main__":
 
     # prepare the model, criterion, optimizer, lr_scheduler, writer
     model, criterion = build(opts)
-    optimizer = torch.optim.Adam(model.parameters(), lr=opts.lr)
+    optimizer = torch.optim.SGD(model.parameters(), lr=opts.lr, momentum=0.9, weight_decay=1e-4)  # TODO: adam?
     lr_scheduler = get_linear_schedule_with_warmup(optimizer, opts.warmup_epochs*len(dataloader_train),
                                                    opts.epochs*len(dataloader_train))
     writer = SummaryWriter(opts.log_dir)

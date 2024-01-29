@@ -1,5 +1,6 @@
 import torch
 
+from model.FCOS import build_fcos
 from model.criterion import SetCriterion
 from model.de_gcn import DeGCN
 from model.retinanet import build_retinanet
@@ -22,7 +23,7 @@ def build(opts):
         num_classes = 20  # default num_classes
 
     #  TODO: try different models
-    model = build_retinanet(opts)  # DeGCN(num_classes).to(device)
+    model = build_fcos(opts)  # DeGCN(num_classes).to(device)
     criterion = SetCriterion(num_classes).to(device)
 
     return model, criterion

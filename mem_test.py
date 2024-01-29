@@ -20,15 +20,13 @@ def func():
     opts.device = "cuda"
     device = torch.device(opts.device)
     opts.dataset_name = "VisDrone"
-    checkpoint = torch.load("checkpoint\\visdrone\\test\\2024_01_23.pth")
-    model = build_retinanet(opts)
+    model = torch.load("c:\\users\\16243\\Downloads\\model.pth")
+    # model = build_retinanet(opts)
     # optimizer = torch.optim.Adam(model.parameters(), lr=opts.lr)
     # lr_scheduler = build_lr_scheduler(optimizer, warmup_epochs=opts.warmup_epochs, epochs=opts.epochs)
 
-    model.load_state_dict(checkpoint['model'])
+    # model.load_state_dict(checkpoint['model'])
     model.train()
-    model1 = torch.load("checkpoint\\visdrone\\test\\model.pth")
-    model1.train()
     # optimizer.load_state_dict(checkpoint['optimizer'])
     # lr_scheduler.load_state_dict(checkpoint['lr_scheduler'])
     # opts.start_epoch = checkpoint['epoch'] + 1
@@ -140,15 +138,16 @@ def func2():
 
 def func3():
     opts = get_opts()  # get the options
-    opts.device = "cpu"
+    opts.device = "cuda"
     device = torch.device(opts.device)
     opts.dataset_name = "VisDrone"
 
-    model = torch.load("c:\\users\\hu.nan\\Downloads\\model.pth", map_location='cpu')
+    model = torch.load("c:\\users\\16243\\Downloads\\model.pth")
+    model.score_thresh = 0.3
     model.eval()
 
     dataset_train, dataset_val = create_dataset("./dataset", "VisDrone")
-    dataloader_train = DataLoader(dataset_train, batch_size=4, shuffle=False, drop_last=False, collate_fn=collate_fn)
+    dataloader_train = DataLoader(dataset_train, batch_size=4, shuffle=True, drop_last=False, collate_fn=collate_fn)
 
     with torch.no_grad():
         for i, (images, targets) in enumerate(dataloader_train):
@@ -158,7 +157,7 @@ def func3():
             for j in range(4):
                 image = images[j]
                 prediction = predictions[j]
-                show_image(image, prediction, "xyxy")
+                show_image(image.cpu(), prediction, "xyxy")
 
 
 if __name__ == '__main__':
