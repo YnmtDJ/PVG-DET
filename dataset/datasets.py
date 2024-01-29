@@ -173,9 +173,7 @@ class VisDroneDetection(Dataset):
 
         for image_id in self.ids:
             ann = {"image_id": image_id}
-            boxes = torch.empty([0, 4], dtype=torch.float32)
-            scores = torch.empty([0], dtype=torch.float32)
-            labels, truncations, occlusions = [torch.empty([0], dtype=torch.int32) for _ in range(3)]
+            boxes, scores, labels, truncations, occlusions = [], [], [], [], []
 
             file_path = os.path.join(self.ann_root, image_id + ".txt")
             with open(file_path, 'r') as file:
@@ -185,14 +183,21 @@ class VisDroneDetection(Dataset):
                     data = line.strip().split(',')[:8]
                     left, top, width, height, score, category, truncation, occlusion = [float(val) for val in data]
 
-                    if width < 1 or height < 1:  # TODO: remove line gt box
+                    if width < 1 or height < 1 or category == 0 or category == 11:  # TODO: remove line gt box
                         continue
 
-                    boxes = torch.cat([boxes, torch.tensor([[left, top, width, height]], dtype=torch.float32)])
-                    labels = torch.cat([labels, torch.tensor([category], dtype=torch.int32)])
-                    scores = torch.cat([scores, torch.tensor([score], dtype=torch.float32)])
-                    truncations = torch.cat([truncations, torch.tensor([truncation], dtype=torch.int32)])
-                    occlusions = torch.cat([occlusions, torch.tensor([occlusion], dtype=torch.int32)])
+                    boxes.append(torch.tensor([left, top, width, height], dtype=torch.float32))
+                    labels.append(torch.tensor(category, dtype=torch.int32))
+                    scores.append(torch.tensor(score, dtype=torch.float32))
+                    truncations.append(torch.tensor(truncation, dtype=torch.int32))
+                    occlusions.append(torch.tensor(occlusion, dtype=torch.int32))
+
+            # List[Tensor] to Tensor
+            boxes = torch.stack(boxes)
+            labels = torch.stack(labels)
+            scores = torch.stack(scores)
+            truncations = torch.stack(truncations)
+            occlusions = torch.stack(occlusions)
 
             ann.update({'boxes': boxes, 'labels': labels, 'scores': scores, 'truncations': truncations,
                         'occlusions': occlusions})

@@ -3,7 +3,7 @@ from functools import partial
 import torch
 from torch import nn
 from torchvision.models import resnet50
-from torchvision.models.detection import FCOS
+from .fcos import FCOS
 from torchvision.models.detection.backbone_utils import _resnet_fpn_extractor
 from torchvision.ops.feature_pyramid_network import LastLevelP6P7
 

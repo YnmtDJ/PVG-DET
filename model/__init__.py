@@ -1,6 +1,6 @@
 import torch
 
-from model.FCOS import build_fcos
+from model.fcos import build_fcos
 from model.criterion import SetCriterion
 from model.de_gcn import DeGCN
 from model.retinanet import build_retinanet

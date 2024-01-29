@@ -9,7 +9,7 @@ from torchvision.ops import box_convert
 from tqdm import tqdm
 
 from dataset.datasets import create_dataset
-from model import build_retinanet
+from model import build_retinanet, build_fcos
 from util.misc import collate_fn, build_lr_scheduler, show_image
 from util.option import get_opts
 from util.visdrone_eval import eval_det
@@ -97,19 +97,18 @@ def fun1():
 
 
 def func2():
-    dataset_train, dataset_val = create_dataset("./dataset", "VisDrone")
+    dataset_train, dataset_val = create_dataset("./dataset", "COCO")
     dataloader_train = DataLoader(dataset_train, batch_size=1, shuffle=True, drop_last=False, collate_fn=collate_fn)
     # transform = GeneralizedRCNNTransform([256, 272, 288, 304, 320, 336, 352], 512, [0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
-    heights, widths = [], []
+    areas = []
     for i, (images, targets) in enumerate(tqdm(dataloader_train)):
         # images, targets = transform(images, targets)
         target = targets[0]
         height, width = target['origin_size']
         boxes = box_convert(target["boxes"], 'xyxy', 'xywh')
-        widths.extend([round(val, 4)for val in (boxes[:, 2] / width).tolist()])
-        heights.extend([round(val, 4)for val in (boxes[:, 3] / height).tolist()])
+        areas.extend([round(val, 4) for val in torch.sqrt((boxes[:, 2]*boxes[:, 3])/(width*height)).tolist()])
 
-    counts = Counter(widths)
+    counts = Counter(areas)
     # 将Counter结果转换为列表形式
     counts = list(counts.items())
     # 将键转换为字符串并进行排序
@@ -117,20 +116,7 @@ def func2():
 
     # 创建条形图
     plt.bar([str(count[0]) for count in sorted_counts], [count[1] for count in sorted_counts])
-    plt.xlabel('widths')
-    plt.ylabel('Count')
-    plt.title('Value Distribution')
-    plt.show()
-
-    counts = Counter(heights)
-    # 将Counter结果转换为列表形式
-    counts = list(counts.items())
-    # 将键转换为字符串并进行排序
-    sorted_counts = sorted(counts, key=lambda x: str(x[0]))
-
-    # 创建条形图
-    plt.bar([str(count[0]) for count in sorted_counts], [count[1] for count in sorted_counts])
-    plt.xlabel('heights')
+    plt.xlabel('areas')
     plt.ylabel('Count')
     plt.title('Value Distribution')
     plt.show()
@@ -138,13 +124,12 @@ def func2():
 
 def func3():
     opts = get_opts()  # get the options
-    opts.device = "cuda"
+    opts.device = "cpu"
     device = torch.device(opts.device)
     opts.dataset_name = "VisDrone"
 
-    model = torch.load("c:\\users\\16243\\Downloads\\model.pth")
-    model.score_thresh = 0.3
-    model.eval()
+    model = build_fcos(opts)
+    model.train()
 
     dataset_train, dataset_val = create_dataset("./dataset", "VisDrone")
     dataloader_train = DataLoader(dataset_train, batch_size=4, shuffle=True, drop_last=False, collate_fn=collate_fn)
@@ -153,11 +138,11 @@ def func3():
         for i, (images, targets) in enumerate(dataloader_train):
             images = [image.to(device) for image in images]
             targets = [{k: v.to(device) if hasattr(v, 'to') else v for k, v in target.items()} for target in targets]
-            predictions = model(images)
-            for j in range(4):
-                image = images[j]
-                prediction = predictions[j]
-                show_image(image.cpu(), prediction, "xyxy")
+            losses = model(images, targets)
+            # for j in range(4):
+            #     image = images[j]
+            #     prediction = predictions[j]
+            #     show_image(image.cpu(), prediction, "xyxy")
 
 
 if __name__ == '__main__':
