@@ -7,6 +7,8 @@ from .fcos import FCOS
 from torchvision.models.detection.backbone_utils import _resnet_fpn_extractor
 from torchvision.ops.feature_pyramid_network import LastLevelP6P7
 
+from ..backbone import PyramidBackbone
+
 
 def build_fcos(opts):
     """

@@ -9,8 +9,7 @@ from torchvision.models.detection.backbone_utils import _resnet_fpn_extractor
 from torchvision.models.detection.retinanet import RetinaNetHead
 from torchvision.ops.feature_pyramid_network import LastLevelP6P7
 
-from model.retinanet.backbone import PyramidBackbone
-
+from ..backbone import PyramidBackbone
 
 def build_retinanet(opts):
     """
