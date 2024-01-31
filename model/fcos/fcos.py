@@ -113,10 +113,6 @@ class FCOSHead(nn.Module):
             pred_centerness[foregroud_mask], gt_ctrness_targets[foregroud_mask], reduction="sum"
         )
 
-        # TODO: delete it
-        if loss_cls < 1e-4 or loss_bbox_reg < 1e-4 or loss_bbox_ctrness < 1e-4:
-            print("ok")
-
         return {
             "classification": loss_cls / max(1, num_foreground),
             "bbox_regression": loss_bbox_reg / max(1, num_foreground),

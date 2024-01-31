@@ -114,12 +114,13 @@ class CocoDetection(torchvision.datasets.CocoDetection):
                 bbox,
                 format=tv_tensors.BoundingBoxFormat.XYWH,
                 canvas_size=canvas_size,
+                dtype=torch.float32,
             ),
             new_format=tv_tensors.BoundingBoxFormat.XYXY,
         )
 
         if "category_id" in batched_target:
-            target["labels"] = torch.tensor(batched_target["category_id"])
+            target["labels"] = torch.tensor(batched_target["category_id"], dtype=torch.int32)
         else:
             target["labels"] = torch.empty(0, dtype=torch.int32)
 
@@ -188,22 +189,9 @@ class VisDroneDetection(Dataset):
 
                     boxes.append([left, top, width, height])
                     labels.append(int(category))
-                    scores.append(scores)
+                    scores.append(score)
                     truncations.append(int(truncation))
                     occlusions.append(int(occlusion))
-
-                    # boxes.append(torch.tensor([left, top, width, height], dtype=torch.float32))
-                    # labels.append(torch.tensor(category, dtype=torch.int32))
-                    # scores.append(torch.tensor(score, dtype=torch.float32))
-                    # truncations.append(torch.tensor(truncation, dtype=torch.int32))
-                    # occlusions.append(torch.tensor(occlusion, dtype=torch.int32))
-
-            # List[Tensor] to Tensor
-            # boxes = torch.stack(boxes)
-            # labels = torch.stack(labels)
-            # scores = torch.stack(scores)
-            # truncations = torch.stack(truncations)
-            # occlusions = torch.stack(occlusions)
 
             ann.update({'boxes': boxes, 'labels': labels, 'scores': scores, 'truncations': truncations,
                         'occlusions': occlusions})
@@ -215,17 +203,27 @@ class VisDroneDetection(Dataset):
     def wrap_dataset_for_transforms_v2(self, image, target):
         canvas_size = tuple(v2F.get_size(image))
 
-        target["origin_size"] = canvas_size
+        batched_target = target
+        target = {"image_id": target["image_id"], "origin_size": canvas_size}
+
+        if len(batched_target["boxes"]) == 0:
+            bbox = torch.empty((0, 4))
+        else:
+            bbox = batched_target["boxes"]
         target["boxes"] = v2F.convert_bounding_box_format(
             tv_tensors.BoundingBoxes(
-                target["boxes"],
+                bbox,
                 format=tv_tensors.BoundingBoxFormat.XYWH,
                 canvas_size=canvas_size,
+                dtype=torch.float32,
             ),
             new_format=tv_tensors.BoundingBoxFormat.XYXY,
         )
 
-        # TODO: fix data load bug
+        target["labels"] = torch.tensor(batched_target["labels"], dtype=torch.int32)
+        target["scores"] = torch.tensor(batched_target["scores"], dtype=torch.float32)
+        target["truncations"] = torch.tensor(batched_target["truncations"], dtype=torch.int32)
+        target["occlusions"] = torch.tensor(batched_target["occlusions"], dtype=torch.int32)
 
         return image, target
 
