@@ -1,15 +1,19 @@
+import random
 from collections import Counter
 
 import numpy as np
 import torch
 from matplotlib import pyplot as plt
+from pycocotools.cocoeval import COCOeval
 from torch.utils.data import DataLoader
 from torchvision.models.detection.transform import GeneralizedRCNNTransform
 from torchvision.ops import box_convert
 from tqdm import tqdm
 
 from dataset.datasets import create_dataset
+from evaluate import evaluate_coco
 from model import build_retinanet, build_fcos
+from model.fcos.fcos import FCOS, FCOSHead, FCOSClassificationHead, FCOSRegressionHead, FCOS_ResNet50_FPN_Weights
 from util.misc import collate_fn, build_lr_scheduler, show_image
 from util.option import get_opts
 from util.visdrone_eval import eval_det
@@ -97,7 +101,7 @@ def fun1():
 
 
 def func2():
-    dataset_train, dataset_val = create_dataset("./dataset", "COCO")
+    dataset_train, dataset_val = create_dataset("./dataset", "VisDrone")
     dataloader_train = DataLoader(dataset_train, batch_size=1, shuffle=True, drop_last=False, collate_fn=collate_fn)
     # transform = GeneralizedRCNNTransform([256, 272, 288, 304, 320, 336, 352], 512, [0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
     areas = []
@@ -145,5 +149,30 @@ def func3():
             #     show_image(image.cpu(), prediction, "xyxy")
 
 
+def test_for_evaluate():
+    dataset_train, dataset_val = create_dataset("./dataset", "VisDrone")
+    dataloader_val = DataLoader(dataset_val, batch_size=4, shuffle=True, drop_last=False, collate_fn=collate_fn)
+
+    all_gt, all_det, all_height, all_width = [], [], [], []
+    for i, (images, targets) in enumerate(tqdm(dataloader_val)):
+        for j, target in enumerate(targets):
+            height, width = target["origin_size"]  # image size
+            image_id = target['image_id']
+            predict_num = target['labels'].shape[0]
+            boxes = box_convert(target['boxes'], 'xyxy', 'xywh')
+
+            gt = torch.cat([boxes, target["scores"].unsqueeze(-1), target["labels"].unsqueeze(-1),
+                            target["truncations"].unsqueeze(-1), target["occlusions"].unsqueeze(-1)],
+                           dim=1).cpu().numpy().astype(np.int32)
+
+            all_gt.append(gt)
+            all_det.append(gt)
+            all_height.append(height)
+            all_width.append(width)
+
+        # evaluate the results
+    ap_all, ap_50, ap_75, ar_1, ar_10, ar_100, ar_500 = eval_det(all_gt, all_det, all_height, all_width)
+
+
 if __name__ == '__main__':
-    func3()
+    func2()

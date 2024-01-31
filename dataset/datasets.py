@@ -186,18 +186,24 @@ class VisDroneDetection(Dataset):
                     if width < 1 or height < 1 or category == 0 or category == 11:  # TODO: remove line gt box
                         continue
 
-                    boxes.append(torch.tensor([left, top, width, height], dtype=torch.float32))
-                    labels.append(torch.tensor(category, dtype=torch.int32))
-                    scores.append(torch.tensor(score, dtype=torch.float32))
-                    truncations.append(torch.tensor(truncation, dtype=torch.int32))
-                    occlusions.append(torch.tensor(occlusion, dtype=torch.int32))
+                    boxes.append([left, top, width, height])
+                    labels.append(int(category))
+                    scores.append(scores)
+                    truncations.append(int(truncation))
+                    occlusions.append(int(occlusion))
+
+                    # boxes.append(torch.tensor([left, top, width, height], dtype=torch.float32))
+                    # labels.append(torch.tensor(category, dtype=torch.int32))
+                    # scores.append(torch.tensor(score, dtype=torch.float32))
+                    # truncations.append(torch.tensor(truncation, dtype=torch.int32))
+                    # occlusions.append(torch.tensor(occlusion, dtype=torch.int32))
 
             # List[Tensor] to Tensor
-            boxes = torch.stack(boxes)
-            labels = torch.stack(labels)
-            scores = torch.stack(scores)
-            truncations = torch.stack(truncations)
-            occlusions = torch.stack(occlusions)
+            # boxes = torch.stack(boxes)
+            # labels = torch.stack(labels)
+            # scores = torch.stack(scores)
+            # truncations = torch.stack(truncations)
+            # occlusions = torch.stack(occlusions)
 
             ann.update({'boxes': boxes, 'labels': labels, 'scores': scores, 'truncations': truncations,
                         'occlusions': occlusions})
@@ -218,6 +224,8 @@ class VisDroneDetection(Dataset):
             ),
             new_format=tv_tensors.BoundingBoxFormat.XYXY,
         )
+
+        # TODO: fix data load bug
 
         return image, target
 
