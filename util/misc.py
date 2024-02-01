@@ -46,7 +46,7 @@ def show_image(image, target, in_fmt):
     :param target: The target in the image.
     :param in_fmt: The format of the input bounding box, e.g. xyxy, xywh, cxcywh.
     """
-    image = image.permute(1, 2, 0).numpy()
+    image = image.permute(1, 2, 0).cpu().numpy()
     image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
 
     for i in range(len(target['boxes'])):

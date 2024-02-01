@@ -1,10 +1,12 @@
 import random
+import time
 from collections import Counter
 
 import numpy as np
 import torch
 from matplotlib import pyplot as plt
 from pycocotools.cocoeval import COCOeval
+from thop import profile
 from torch.utils.data import DataLoader
 from torchvision.models.detection.transform import GeneralizedRCNNTransform
 from torchvision.ops import box_convert
@@ -133,7 +135,8 @@ def func3():
     opts.dataset_name = "VisDrone"
 
     model = build_fcos(opts)
-    model.train()
+    model.load_state_dict(torch.load("C:\\Users\\hu.nan\\Downloads\\visdrone\\6e-4+warmup\\2+4\\checkpoint.pth", map_location="cpu")["model"])
+    model.eval()
 
     dataset_train, dataset_val = create_dataset("./dataset", "VisDrone")
     dataloader_train = DataLoader(dataset_train, batch_size=4, shuffle=True, drop_last=False, collate_fn=collate_fn)
@@ -142,11 +145,11 @@ def func3():
         for i, (images, targets) in enumerate(dataloader_train):
             images = [image.to(device) for image in images]
             targets = [{k: v.to(device) if hasattr(v, 'to') else v for k, v in target.items()} for target in targets]
-            losses = model(images, targets)
-            # for j in range(4):
-            #     image = images[j]
-            #     prediction = predictions[j]
-            #     show_image(image.cpu(), prediction, "xyxy")
+            predictions = model(images, targets)
+            for j in range(4):
+                image = images[j]
+                prediction = predictions[j]
+                show_image(image, prediction, "xyxy")
 
 
 def test_for_evaluate():
@@ -174,5 +177,24 @@ def test_for_evaluate():
     ap_all, ap_50, ap_75, ar_1, ar_10, ar_100, ar_500 = eval_det(all_gt, all_det, all_height, all_width)
 
 
+def evaluate_flops():
+    opts = get_opts()  # get the options
+    opts.device = "cpu"
+    device = torch.device(opts.device)
+    opts.dataset_name = "VisDrone"
+
+    model = build_fcos(opts)
+    model.eval()
+    torch.save(model.state_dict(), "./model1.pth")
+    with torch.no_grad():
+        images = [torch.randn([3, 667, 1333], dtype=torch.float32)]
+        start_time = time.time()
+        macs, params = profile(model, inputs=(images,))
+        end_time = time.time()
+        print("macs: {}G".format(macs/(10**9)))
+        print("params: {}M".format(params/(10**6)))
+        print("time: {}s".format(end_time-start_time))
+
+
 if __name__ == '__main__':
-    func2()
+    func3()
