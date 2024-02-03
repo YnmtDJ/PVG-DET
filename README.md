@@ -7,9 +7,7 @@ tqdm 4.65.0
 opencv-contrib-python 4.8.1.78  
 scipy 1.11.4  
 torch 2.1.0  
-torchvision 0.16.0  
-timm  0.9.11  
-transformers  4.32.1  
+torchvision 0.16.0
 pycocotools 2.0.7  
 
 ## Dataset

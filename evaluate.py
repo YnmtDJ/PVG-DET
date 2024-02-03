@@ -1,6 +1,5 @@
 import numpy as np
 import torch
-import torch.nn.functional as F
 from pycocotools.cocoeval import COCOeval
 from torchvision.ops import box_convert
 from tqdm import tqdm
@@ -68,44 +67,6 @@ def evaluate_coco(model, criterion, dataloader, epoch, writer):
                     for k in range(predict_num)
                 ]
             )
-
-        # loss, loss_ce, loss_bbox, loss_giou = criterion(outputs, targets)
-        #
-        # # write the loss to tensorboard
-        # writer.add_scalar("val/loss", loss.item(), epoch * len(dataloader) + i)
-        # writer.add_scalar("val/loss_ce", loss_ce.item(), epoch * len(dataloader) + i)
-        # writer.add_scalar("val/loss_bbox", loss_bbox.item(), epoch * len(dataloader) + i)
-        # writer.add_scalar("val/loss_giou", loss_giou.item(), epoch * len(dataloader) + i)
-        #
-        # # get the predict labels and scores
-        # predict_logits = outputs['pred_logits']  # (batch_size, num_queries, num_classes)
-        # batch_size, num_queries, num_classes = predict_logits.shape
-        # predict_prob = F.softmax(predict_logits, dim=-1)
-        # scores, labels = torch.max(predict_prob, dim=-1)
-        #
-        # # convert the boxes from (center_x, center_y, width, height) to (x1, y1, width, height)
-        # predict_boxes = outputs['pred_boxes']  # (batch_size, num_queries, 4)
-        # boxes = box_convert(predict_boxes.reshape(-1, 4), "cxcywh", "xywh")
-        # boxes = boxes.reshape(batch_size, num_queries, 4)
-        #
-        # for j, target in enumerate(targets):
-        #     image_id = target['image_id']
-        #     height, width = target["origin_size"]  # image size
-        #
-        #     # non-normalized boxes coordinates by the size of each image
-        #     boxes[j] = boxes[j] * torch.tensor([width, height, width, height], device=device)
-        #     results.extend(
-        #         [
-        #             {
-        #                 "image_id": image_id,
-        #                 "category_id": labels[j][k].item(),
-        #                 "bbox": boxes[j][k].tolist(),
-        #                 "score": scores[j][k].item(),
-        #             }
-        #             for k in range(num_queries)
-        #             if labels[j][k].item() != num_classes - 1  # filter the no-object class
-        #         ]
-        #     )
 
     if len(results) == 0:  # model does not detect any object
         print("epoch: {}, evaluate coco, model does not detect any object.".format(epoch))

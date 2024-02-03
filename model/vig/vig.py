@@ -14,10 +14,9 @@ class ViG(nn.Module):
     Vision GNN: An Image is Worth Graph of Nodes. (Without pyramid)
     https://github.com/huawei-noah/Efficient-AI-Backbones/tree/master/vig_pytorch
     """
-    def __init__(self, d_model=192, act=nn.GELU(), drop_prob=0.1, n_blocks=12, k=9, use_dilation=True, gcn='MRConv2d'):
+    def __init__(self, d_model=192, drop_prob=0.1, n_blocks=12, k=9, use_dilation=True, gcn='MRConv2d'):
         """
         :param d_model: The number of hidden channels.
-        :param act: The activation function.
         :param drop_prob: The probability of DropPath.
         :param n_blocks: The number of blocks.
         :param k: The number of neighbors.
@@ -36,16 +35,16 @@ class ViG(nn.Module):
         if use_dilation:
             self.backbone = nn.Sequential(*[
                 nn.Sequential(
-                    Grapher(d_model, n_knn[i], min(i//4+1, max_dilation), None, gcn, act, drop_probs[i]),
-                    FFN(d_model, d_model*4, d_model, act, drop_probs[i])
+                    Grapher(d_model, n_knn[i], min(i//4+1, max_dilation), None, gcn, drop_probs[i]),
+                    FFN(d_model, d_model*4, d_model, drop_probs[i])
                 )
                 for i in range(n_blocks)
             ])
         else:
             self.backbone = nn.Sequential(*[
                 nn.Sequential(
-                    Grapher(d_model, n_knn[i], 1, None, gcn, act, drop_probs[i]),
-                    FFN(d_model, d_model*4, d_model, act, drop_probs[i])
+                    Grapher(d_model, n_knn[i], 1, None, gcn, drop_probs[i]),
+                    FFN(d_model, d_model*4, d_model, drop_probs[i])
                 )
                 for i in range(n_blocks)
             ])
@@ -61,14 +60,13 @@ class PyramidViG(nn.Module):
     Vision GNN: An Image is Worth Graph of Nodes. (With pyramid)
     https://github.com/huawei-noah/Efficient-AI-Backbones/tree/master/vig_pytorch
     """
-    def __init__(self, blocks: List = None, channels: List = None, steps=None, k=9, gcn='MRConv2d', act=nn.GELU(), drop_prob=0.1):
+    def __init__(self, blocks: List = None, channels: List = None, steps=None, k=9, gcn='MRConv2d', drop_prob=0.1):
         """
         :param blocks: The number of blocks in each layer.
         :param channels: The number of channels in each layer.
         :param steps: The number of partition step in each layer.
         :param k: The number of neighbors.
         :param gcn: The graph convolution type. (MRConv2d, EdgeConv2d, GraphSAGE, GINConv2d)
-        :param act: The activation function.
         :param drop_prob:  The probability of DropPath.
         """
         super(PyramidViG, self).__init__()
@@ -77,7 +75,7 @@ class PyramidViG(nn.Module):
         # the length of blocks, channels and steps must be equal
         assert len(blocks) == len(channels) and len(blocks) == len(steps)
         if channels is None:
-            channels = [48, 96, 240, 384]
+            channels = [64, 128, 256, 384]
         if steps is None:
             steps = [4, 2, 1, 1]
         if blocks is None:
@@ -89,7 +87,7 @@ class PyramidViG(nn.Module):
         n_knn = [int(x.item()) for x in torch.linspace(k, k, n_blocks)]  # number of neighbors
         max_dilation = (min_size[0] // 2**(1+len(blocks))) * (min_size[1] // 2**(1+len(blocks))) // max(n_knn)
 
-        self.stem = Stem4(3, channels[0], act)
+        self.stem = Stem4(3, channels[0])
         self.pos_embed = PositionEmbedding2d()
         self.backbone = nn.Sequential()
         idx = 0
@@ -99,15 +97,15 @@ class PyramidViG(nn.Module):
                 block.append(
                     nn.Sequential(
                         nn.Conv2d(channels[i - 1], channels[i], 3, stride=2, padding=1),
-                        nn.BatchNorm2d(channels[i])
+                        nn.GroupNorm(32, channels[i])
                     )
                 )
 
             for j in range(blocks[i]):
                 block.append(
                     nn.Sequential(
-                        Grapher(channels[i], n_knn[idx], min(idx//4+1, max_dilation), steps[i], gcn, act, drop_probs[idx]),
-                        FFN(channels[i], channels[i]*4, channels[i], act, drop_probs[idx])
+                        Grapher(channels[i], n_knn[idx], min(idx//4+1, max_dilation), steps[i], gcn, drop_probs[idx]),
+                        FFN(channels[i], channels[i]*4, channels[i], drop_probs[idx])
                     )
                 )
                 idx += 1
@@ -140,29 +138,28 @@ class Stem16(nn.Module):
     Image to Visual Word Embedding Overlap
     https://github.com/whai362/PVT
     """
-    def __init__(self, in_ch=3, out_ch=768, act=nn.GELU()):
+    def __init__(self, in_ch=3, out_ch=768):
         """
         The image resolution will be divided by 16×16.
         :param in_ch: The number of input channels.
         :param out_ch: The number of output channels.
-        :param act: The activation function.
         """
         super(Stem16, self).__init__()
         self.stem = nn.Sequential(
             nn.Conv2d(in_ch, out_ch // 8, 3, stride=2, padding=1),
-            nn.BatchNorm2d(out_ch // 8),
-            act,
+            nn.GroupNorm(32, out_ch // 8),
+            nn.GELU(),
             nn.Conv2d(out_ch // 8, out_ch // 4, 3, stride=2, padding=1),
-            nn.BatchNorm2d(out_ch // 4),
-            act,
+            nn.GroupNorm(32, out_ch // 4),
+            nn.GELU(),
             nn.Conv2d(out_ch // 4, out_ch // 2, 3, stride=2, padding=1),
-            nn.BatchNorm2d(out_ch // 2),
-            act,
+            nn.GroupNorm(32, out_ch // 2),
+            nn.GELU(),
             nn.Conv2d(out_ch // 2, out_ch, 3, stride=2, padding=1),
-            nn.BatchNorm2d(out_ch),
-            act,
+            nn.GroupNorm(32, out_ch),
+            nn.GELU(),
             nn.Conv2d(out_ch, out_ch, 3, stride=1, padding=1),
-            nn.BatchNorm2d(out_ch),
+            nn.GroupNorm(32, out_ch),
         )
 
     def forward(self, x):
@@ -175,23 +172,22 @@ class Stem4(nn.Module):
     Image to Visual Word Embedding Overlap
     https://github.com/whai362/PVT
     """
-    def __init__(self, in_ch=3, out_ch=768, act=nn.GELU()):
+    def __init__(self, in_ch=3, out_ch=768):
         """
         The image resolution will be divided by 4×4.
         :param in_ch: The number of input channels.
         :param out_ch: The number of output channels.
-        :param act: The activation function.
         """
         super(Stem4, self).__init__()
         self.stem = nn.Sequential(
             nn.Conv2d(in_ch, out_ch//2, 3, stride=2, padding=1),
-            nn.BatchNorm2d(out_ch//2),
-            act,
+            nn.GroupNorm(32, out_ch//2),
+            nn.GELU(),
             nn.Conv2d(out_ch//2, out_ch, 3, stride=2, padding=1),
-            nn.BatchNorm2d(out_ch),
-            act,
+            nn.GroupNorm(32, out_ch),
+            nn.GELU(),
             nn.Conv2d(out_ch, out_ch, 3, stride=1, padding=1),
-            nn.BatchNorm2d(out_ch),
+            nn.GroupNorm(32, out_ch),
         )
 
     def forward(self, x):

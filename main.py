@@ -3,7 +3,6 @@ import time
 import torch
 from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
-from transformers import get_linear_schedule_with_warmup
 
 from dataset.datasets import create_dataset
 from evaluate import evaluate
@@ -29,8 +28,8 @@ if __name__ == "__main__":
     # prepare the model, criterion, optimizer, lr_scheduler, writer
     model, criterion = build(opts)
     optimizer = torch.optim.Adam(model.parameters(), lr=opts.lr)
-    lr_scheduler = get_linear_schedule_with_warmup(optimizer, opts.warmup_epochs*len(dataloader_train),
-                                                   opts.epochs*len(dataloader_train))
+    lr_scheduler = build_lr_scheduler(optimizer, opts.warmup_epochs * len(dataloader_train),
+                                      opts.epochs * len(dataloader_train))
     writer = SummaryWriter(opts.log_dir)
 
     # load the parameters to continue training
@@ -38,7 +37,6 @@ if __name__ == "__main__":
         model.load_state_dict(checkpoint['model'])
         optimizer.load_state_dict(checkpoint['optimizer'])
         lr_scheduler.load_state_dict(checkpoint['lr_scheduler'])
-        opts.start_epoch = checkpoint['epoch'] + 1
 
     print("Start training...")
     for epoch in range(opts.start_epoch, opts.epochs):

@@ -6,13 +6,12 @@ import numpy as np
 import torch
 from matplotlib import pyplot as plt
 from pycocotools.cocoeval import COCOeval
-from thop import profile
 from torch.utils.data import DataLoader
 from torchvision.models.detection.transform import GeneralizedRCNNTransform
 from torchvision.ops import box_convert
 from tqdm import tqdm
 
-from dataset.datasets import create_dataset
+from dataset.datasets import create_dataset, create_visdrone_dataset
 from evaluate import evaluate_coco
 from model import build_retinanet, build_fcos
 from model.fcos.fcos import FCOS, FCOSHead, FCOSClassificationHead, FCOSRegressionHead, FCOS_ResNet50_FPN_Weights
@@ -153,48 +152,51 @@ def func3():
 
 
 def test_for_evaluate():
-    dataset_train, dataset_val = create_dataset("./dataset", "VisDrone")
-    dataloader_val = DataLoader(dataset_val, batch_size=4, shuffle=True, drop_last=False, collate_fn=collate_fn)
+    dataset_test = create_visdrone_dataset("dataset/VisDrone/", "test")
+    dataloader_test = DataLoader(dataset_test, batch_size=4, shuffle=False, drop_last=False, collate_fn=collate_fn)
 
-    all_gt, all_det, all_height, all_width = [], [], [], []
-    for i, (images, targets) in enumerate(tqdm(dataloader_val)):
-        for j, target in enumerate(targets):
-            height, width = target["origin_size"]  # image size
-            image_id = target['image_id']
-            predict_num = target['labels'].shape[0]
-            boxes = box_convert(target['boxes'], 'xyxy', 'xywh')
-
-            gt = torch.cat([boxes, target["scores"].unsqueeze(-1), target["labels"].unsqueeze(-1),
-                            target["truncations"].unsqueeze(-1), target["occlusions"].unsqueeze(-1)],
-                           dim=1).cpu().numpy().astype(np.int32)
-
-            all_gt.append(gt)
-            all_det.append(gt)
-            all_height.append(height)
-            all_width.append(width)
-
-        # evaluate the results
-    ap_all, ap_50, ap_75, ar_1, ar_10, ar_100, ar_500 = eval_det(all_gt, all_det, all_height, all_width)
-
-
-def evaluate_flops():
     opts = get_opts()  # get the options
-    opts.device = "cpu"
+    opts.device = "cuda"
     device = torch.device(opts.device)
     opts.dataset_name = "VisDrone"
 
     model = build_fcos(opts)
+    model.load_state_dict(torch.load("C:\\Users\\16243\\Downloads\\checkpoint.pth")["model"])
     model.eval()
-    torch.save(model.state_dict(), "./model1.pth")
+
     with torch.no_grad():
-        images = [torch.randn([3, 667, 1333], dtype=torch.float32)]
-        start_time = time.time()
-        macs, params = profile(model, inputs=(images,))
-        end_time = time.time()
-        print("macs: {}G".format(macs/(10**9)))
-        print("params: {}M".format(params/(10**6)))
-        print("time: {}s".format(end_time-start_time))
+        all_gt, all_det, all_height, all_width = [], [], [], []
+        for i, (images, targets) in enumerate(tqdm(dataloader_test)):
+            images = [image.to(device) for image in images]
+            targets = [{k: v.to(device) if hasattr(v, 'to') else v for k, v in target.items()} for target in targets]
+            predictions = model(images)
+
+            for j, target in enumerate(targets):
+                height, width = target["origin_size"]  # image size
+                prediction = predictions[j]
+                predict_num = prediction['labels'].shape[0]
+
+                # convert the boxes format
+                target_boxes = box_convert(target['boxes'], 'xyxy', 'xywh')
+                predict_boxes = box_convert(prediction['boxes'], 'xyxy', 'xywh')
+
+                gt = torch.cat([target_boxes, target["scores"].unsqueeze(-1), target["labels"].unsqueeze(-1),
+                                target["truncations"].unsqueeze(-1), target["occlusions"].unsqueeze(-1)],
+                               dim=1).cpu().numpy().astype(np.int32)
+
+                const = -torch.ones([predict_num, 1], dtype=torch.int32).to(device)  # constant tensor -1
+                det = torch.cat([predict_boxes, prediction["scores"].unsqueeze(-1), prediction["labels"].unsqueeze(-1),
+                                 const, const], dim=1).cpu().numpy()
+
+                all_gt.append(gt)
+                all_det.append(det)
+                all_height.append(height)
+                all_width.append(width)
+
+        # evaluate the results
+        ap_all, ap_50, ap_75, ar_1, ar_10, ar_100, ar_500 = eval_det(all_gt, all_det, all_height, all_width)
+        print("evaluate finish.")
 
 
 if __name__ == '__main__':
-    func3()
+    test_for_evaluate()

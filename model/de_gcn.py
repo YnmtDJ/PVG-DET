@@ -12,7 +12,7 @@ class DeGCN(nn.Module):
     """
     End-to-end object detection with graph convolution network and transformer.
     """
-    def __init__(self, num_classes, num_queries=100, d_model=192):
+    def __init__(self, num_classes, num_queries=100, d_model=256):
         """
         :param num_classes: The number of object classes.
         :param num_queries: The number of object queries, ie detection slot. This is the maximal number of objects can

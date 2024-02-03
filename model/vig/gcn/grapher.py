@@ -1,8 +1,7 @@
 import torch
-from timm.models.layers import DropPath
 from torch import nn
 
-from model.common import BasicConv
+from model.common import BasicConv, DropPath
 from model.pos_embed import RelativePositionEmbedding2d
 from model.vig.gcn.edge import DenseDilatedKnnGraph
 
@@ -11,25 +10,24 @@ class Grapher(nn.Module):
     """
     Grapher module with graph convolution and fc layers
     """
-    def __init__(self, in_ch, k=9, dilation=1, step=1, gcn='MRConv2d', act=nn.GELU(), drop_prob=0.1):
+    def __init__(self, in_ch, k=9, dilation=1, step=1, gcn='MRConv2d', drop_prob=0.1):
         """
         :param in_ch: The number of input channels.
         :param k: The number of neighbors.
         :param dilation: The dilation rate.
         :param step: The step of partition. If step=1 or none, it means no partition.
         :param gcn: The graph convolution type. (MRConv2d, EdgeConv2d, GraphSAGE, GINConv2d)
-        :param act: The activation function.
         :param drop_prob: DropPath probability.
         """
         super(Grapher, self).__init__()
         self.fc1 = nn.Sequential(
             nn.Conv2d(in_ch, in_ch, 1, stride=1, padding=0),
-            nn.BatchNorm2d(in_ch),
+            nn.GroupNorm(32, in_ch),
         )
-        self.graph_conv = DyGraphConv2d(in_ch, in_ch*2, k, dilation, step, gcn, act)
+        self.graph_conv = DyGraphConv2d(in_ch, in_ch*2, k, dilation, step, gcn)
         self.fc2 = nn.Sequential(
             nn.Conv2d(in_ch*2, in_ch, 1, stride=1, padding=0),
-            nn.BatchNorm2d(in_ch),
+            nn.GroupNorm(32, in_ch),
         )
         self.drop_path = DropPath(drop_prob) if drop_prob > 0. else nn.Identity()
 
@@ -46,7 +44,7 @@ class DyGraphConv2d(nn.Module):
     """
     Dynamic graph convolution layer
     """
-    def __init__(self, in_ch, out_ch, k=9, dilation=1, step=1, gcn="MRConv2d", act=nn.GELU()):
+    def __init__(self, in_ch, out_ch, k=9, dilation=1, step=1, gcn="MRConv2d"):
         """
         :param in_ch: The number of input channels.
         :param out_ch: The number of output channels.
@@ -54,19 +52,18 @@ class DyGraphConv2d(nn.Module):
         :param dilation: The dilation rate.
         :param step: The step of partition. If step=1 or none, it means no partition.
         :param gcn: Graph convolution type. (MRConv2d, EdgeConv2d, GraphSAGE, GINConv2d)
-        :param act: The activation function.
         """
         super(DyGraphConv2d, self).__init__()
         self.out_ch = out_ch
         self.step = step
         if gcn == 'MRConv2d':
-            self.gcn = MRConv2d(in_ch, out_ch, act)
+            self.gcn = MRConv2d(in_ch, out_ch)
         elif gcn == 'EdgeConv2d':
-            self.gcn = EdgeConv2d(in_ch, out_ch, act)
+            self.gcn = EdgeConv2d(in_ch, out_ch)
         elif gcn == 'GraphSAGE':
-            self.gcn = GraphSAGE(in_ch, out_ch, act)
+            self.gcn = GraphSAGE(in_ch, out_ch)
         elif gcn == 'GINConv2d':
-            self.gcn = GINConv2d(in_ch, out_ch, act)
+            self.gcn = GINConv2d(in_ch, out_ch)
         else:
             self.gcn = None
             raise NotImplementedError('gcn:{} is not supported'.format(gcn))
@@ -103,14 +100,13 @@ class MRConv2d(nn.Module):
     Max-Relative Graph Convolution.
     https://arxiv.org/abs/1904.03751
     """
-    def __init__(self, in_ch, out_ch, act=nn.GELU()):
+    def __init__(self, in_ch, out_ch):
         """
         :param in_ch: The number of input channels.
         :param out_ch: The number of output channels.
-        :param act: The activation function.
         """
         super(MRConv2d, self).__init__()
-        self.conv = BasicConv(in_ch*2, out_ch, act)
+        self.conv = BasicConv(in_ch*2, out_ch)
 
     def forward(self, x, edge_index):
         """
@@ -126,16 +122,15 @@ class MRConv2d(nn.Module):
 
 class EdgeConv2d(nn.Module):
     """
-    Edge convolution layer (with activation, batch normalization).
+    Edge convolution layer (with activation, group normalization).
     """
-    def __init__(self, in_ch, out_ch, act=nn.GELU()):
+    def __init__(self, in_ch, out_ch):
         """
         :param in_ch: The number of input channels.
         :param out_ch: The number of output channels.
-        :param act: The activation function.
         """
         super(EdgeConv2d, self).__init__()
-        self.conv = BasicConv(in_ch*2, out_ch, act)
+        self.conv = BasicConv(in_ch*2, out_ch)
 
     def forward(self, x, edge_index):
         """
@@ -153,15 +148,14 @@ class GraphSAGE(nn.Module):
     GraphSAGE Graph Convolution.
     https://arxiv.org/abs/1706.02216
     """
-    def __init__(self, in_ch, out_ch, act=nn.GELU()):
+    def __init__(self, in_ch, out_ch):
         """
         :param in_ch: The number of input channels.
         :param out_ch: The number of output channels.
-        :param act: The activation function.
         """
         super(GraphSAGE, self).__init__()
-        self.conv1 = BasicConv(in_ch, in_ch, act)
-        self.conv2 = BasicConv(in_ch*2, out_ch, act)
+        self.conv1 = BasicConv(in_ch, in_ch)
+        self.conv2 = BasicConv(in_ch*2, out_ch)
 
     def forward(self, x, edge_index):
         """
@@ -178,14 +172,13 @@ class GINConv2d(nn.Module):
     GIN Graph Convolution.
     https://arxiv.org/abs/1810.00826
     """
-    def __init__(self, in_ch, out_ch, act=nn.GELU()):
+    def __init__(self, in_ch, out_ch):
         """
         :param in_ch: The number of input channels.
         :param out_ch: The number of output channels.
-        :param act: The activation function.
         """
         super(GINConv2d, self).__init__()
-        self.conv = BasicConv(in_ch, out_ch, act)
+        self.conv = BasicConv(in_ch, out_ch)
         eps_init = 0.0
         self.eps = nn.Parameter(torch.Tensor([eps_init]))
 
