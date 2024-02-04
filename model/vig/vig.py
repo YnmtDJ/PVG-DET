@@ -60,11 +60,11 @@ class PyramidViG(nn.Module):
     Vision GNN: An Image is Worth Graph of Nodes. (With pyramid)
     https://github.com/huawei-noah/Efficient-AI-Backbones/tree/master/vig_pytorch
     """
-    def __init__(self, blocks: List = None, channels: List = None, strides=None, k=9, gcn='MRConv2d', drop_prob=0.1):
+    def __init__(self, blocks: List = None, channels: List = None, sr_ratios=None, k=9, gcn='MRConv2d', drop_prob=0.1):
         """
         :param blocks: The number of blocks in each layer.
         :param channels: The number of channels in each layer.
-        :param strides: The number of partition stride in each layer.
+        :param sr_ratios: The spatial reduction ratios in each layer.
         :param k: The number of neighbors.
         :param gcn: The graph convolution type. (MRConv2d, EdgeConv2d, GraphSAGE, GINConv2d)
         :param drop_prob:  The probability of DropPath.
@@ -72,12 +72,12 @@ class PyramidViG(nn.Module):
         super(PyramidViG, self).__init__()
         max_size = (800, 800)  # the maximum size of the input image
         min_size = (224, 224)  # the minimum size of the input image
-        # the length of blocks, channels and strides must be equal
-        assert len(blocks) == len(channels) and len(blocks) == len(strides)
+        # the length of blocks, channels and sr_ratios must be equal
+        assert len(blocks) == len(channels) and len(blocks) == len(sr_ratios)
         if channels is None:
             channels = [64, 128, 256, 384]
-        if strides is None:
-            strides = [4, 2, 1, 1]
+        if sr_ratios is None:
+            sr_ratios = [4, 2, 1, 1]
         if blocks is None:
             blocks = [2, 2, 6, 2]
         self.blocks = blocks
@@ -104,7 +104,7 @@ class PyramidViG(nn.Module):
             for j in range(blocks[i]):
                 block.append(
                     nn.Sequential(
-                        Grapher(channels[i], n_knn[idx], min(idx//4+1, max_dilation), strides[i], gcn, drop_probs[idx]),
+                        Grapher(channels[i], n_knn[idx], min(idx//4+1, max_dilation), sr_ratios[i], gcn, drop_probs[idx]),
                         FFN(channels[i], channels[i]*4, channels[i], drop_probs[idx])
                     )
                 )

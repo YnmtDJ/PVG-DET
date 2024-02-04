@@ -19,29 +19,6 @@ class PositionEmbedding2d(nn.Module):
         return pos_embedding
 
 
-class RelativePositionEmbedding2d(nn.Module):
-    """
-    2D Relative Position Embedding using Sine and Cosine functions.
-    """
-    def __init__(self):
-        super(RelativePositionEmbedding2d, self).__init__()
-
-    def forward(self, x):
-        batch_size, d_model, height, width = x.shape
-        device = x.device
-        assert d_model % 4 == 0
-
-        # calculate 2d position embedding
-        pos_embedding = get_2d_pos_embedding(d_model, height, width, device)  # (d_model, height, width)
-        pos_embedding = pos_embedding.reshape(d_model, -1)  # (d_model, num_points)
-
-        # calculate relative position embedding
-        # (num_points, num_points)
-        relative_pos = 2 * torch.matmul(pos_embedding.transpose(0, 1), pos_embedding) / d_model
-        relative_pos = relative_pos.unsqueeze(0).expand(batch_size, -1, -1)  # (batch_size, num_points, num_points)
-        return relative_pos
-
-
 def get_1d_pos_embedding(d_model, seq_len, device):
     """
     :param d_model: The hidden dimension.
