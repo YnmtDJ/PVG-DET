@@ -15,8 +15,7 @@ class PositionEmbedding2d(nn.Module):
         assert d_model % 4 == 0
 
         pos_embedding = get_2d_pos_embedding(d_model, height, width, device)  # (d_model, height, width)
-        # (batch_size, d_model, height, width)
-        pos_embedding = pos_embedding.unsqueeze(0).expand(batch_size, -1, -1, -1)
+        pos_embedding = pos_embedding.unsqueeze(0)  # (1, d_model, height, width)
         return pos_embedding
 
 
