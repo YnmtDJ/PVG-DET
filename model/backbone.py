@@ -12,12 +12,12 @@ class PyramidBackbone(nn.Module):
     """
     def __init__(self):
         super(PyramidBackbone, self).__init__()
-        channels = [128, 192, 416, 640]
+        channels = [64, 128, 256, 512]
         blocks = [2, 2, 6, 2]
         sr_ratios = [4, 2, 1, 1]
-        self.out_channels = 128
+        self.out_channels = 256
         self.backbone = PyramidViG(blocks, channels, sr_ratios)
-        self.fpn = FeaturePyramidNetwork([192, 416, 640], self.out_channels,
+        self.fpn = FeaturePyramidNetwork([128, 256, 512], self.out_channels,
                                          LastLevelP6P7(self.out_channels, self.out_channels))
 
     def forward(self, x):

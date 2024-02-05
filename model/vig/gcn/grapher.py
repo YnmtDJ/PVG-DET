@@ -1,3 +1,5 @@
+from math import sqrt
+
 import torch
 import torch.nn.functional as F
 from torch import nn
@@ -81,8 +83,9 @@ class DyGraphConv2d(nn.Module):
         if sr_ratio is not None:  # and sr_ratio > 1:
             # x_reduce = F.adaptive_avg_pool2d(x, (height // sr_ratio, width // sr_ratio))
             # pos_x_reduce = F.adaptive_avg_pool2d(pos_x, (height // sr_ratio, width // sr_ratio))
-            x_reduce = F.adaptive_avg_pool2d(x, 7)
-            pos_x_reduce = F.adaptive_avg_pool2d(pos_x, 7)
+            alpha = sqrt(height / width)
+            x_reduce = F.adaptive_avg_pool2d(x, (round(7 * alpha), round(7 / alpha)))
+            pos_x_reduce = F.adaptive_avg_pool2d(pos_x, (round(7 * alpha), round(7 / alpha)))
         else:
             x_reduce = x
             pos_x_reduce = pos_x
