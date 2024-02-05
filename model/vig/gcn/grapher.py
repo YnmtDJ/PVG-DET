@@ -81,12 +81,14 @@ class DyGraphConv2d(nn.Module):
         if sr_ratio is not None and sr_ratio > 1:
             x_reduce = F.adaptive_avg_pool2d(x, (height // sr_ratio, width // sr_ratio))
             pos_x_reduce = F.adaptive_avg_pool2d(pos_x, (height // sr_ratio, width // sr_ratio))
+            # x_reduce = F.adaptive_avg_pool2d(x, (7, 7*width // height))
+            # pos_x_reduce = F.adaptive_avg_pool2d(pos_x, (7, 7 * width // height))
         else:
             x_reduce = x
             pos_x_reduce = pos_x
 
         # calculate relative position and reshape the feature tensor
-        relative_pos = self.get_2d_relative_pos(pos_x.squeeze(0), pos_x_reduce.squeeze(0))
+        relative_pos = get_2d_relative_pos(pos_x.squeeze(0), pos_x_reduce.squeeze(0))
         relative_pos = relative_pos.unsqueeze(0)  # (1, n_points, m_points)
         x = x.reshape(batch_size, in_ch, -1, 1)  # (batch_size, in_ch, n_points, 1)
         x_reduce = x_reduce.reshape(batch_size, in_ch, -1, 1)  # (batch_size, in_ch, m_points, 1)
@@ -95,22 +97,6 @@ class DyGraphConv2d(nn.Module):
         edge_index = self.dilated_knn_graph(x, x_reduce, relative_pos)  # (2, batch_size, n_points, k)
         x = self.gcn(x, x_reduce, edge_index)  # (batch_size, in_ch, n_points, 1)
         return x.reshape(batch_size, -1, height, width)
-
-    def get_2d_relative_pos(self, pos_x, pos_y):
-        """
-        Calculate the relative position between two 2d position embeddings.
-        :param pos_x: (d_model, height_x, width_x)
-        :param pos_y: (d_model, height_y, width_y)
-        :return: relative position (height_x*width_x, height_y*width_y)
-        """
-        d_model, _, _ = pos_x.shape
-        pos_x = pos_x.reshape(d_model, -1)  # (d_model, num_points_x)
-        pos_y = pos_y.reshape(d_model, -1)  # (d_model, num_points_y)
-
-        # calculate relative position
-        # (num_points_x, num_points_y)
-        relative_pos = 2 * torch.matmul(pos_x.transpose(0, 1), pos_y) / d_model
-        return relative_pos
 
 
 class MRConv2d(nn.Module):
@@ -239,3 +225,20 @@ def batched_index_select(x, idx):
     feature = x.reshape(batch_size * n_points, -1)[idx, :]
     feature = feature.reshape(batch_size, m_points, k, num_dims).permute(0, 3, 1, 2)
     return feature
+
+
+def get_2d_relative_pos(pos_x, pos_y):
+    """
+    Calculate the relative position between two 2d position embeddings.
+    :param pos_x: (d_model, height_x, width_x)
+    :param pos_y: (d_model, height_y, width_y)
+        :return: relative position (height_x*width_x, height_y*width_y)
+        """
+    d_model, _, _ = pos_x.shape
+    pos_x = pos_x.reshape(d_model, -1)  # (d_model, num_points_x)
+    pos_y = pos_y.reshape(d_model, -1)  # (d_model, num_points_y)
+
+    # calculate relative position
+    # (num_points_x, num_points_y)
+    relative_pos = 2 * torch.matmul(pos_x.transpose(0, 1), pos_y) / d_model
+    return relative_pos
