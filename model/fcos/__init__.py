@@ -26,11 +26,11 @@ def build_fcos(opts):
     else:
         num_classes = 20  # default num_classes
 
-    # backbone = PyramidBackbone()
-    backbone = resnet50(norm_layer=partial(nn.GroupNorm, 32))
-    backbone = _resnet_fpn_extractor(
-        backbone, 5, returned_layers=[2, 3, 4], extra_blocks=LastLevelP6P7(256, 256)
-    )
+    backbone = PyramidBackbone()
+    # backbone = resnet50(norm_layer=partial(nn.GroupNorm, 32))
+    # backbone = _resnet_fpn_extractor(
+    #     backbone, 5, returned_layers=[2, 3, 4], extra_blocks=LastLevelP6P7(256, 256)
+    # )
     # TODO: image resolution  [512, 544, 576, 608, 640, 672, 704]
     model = FCOS(backbone, num_classes, 800, 1333, score_thresh=0.2).to(device)
     return model
