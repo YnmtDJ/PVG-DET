@@ -1,4 +1,4 @@
-from math import sqrt
+import math
 
 import torch
 import torch.nn.functional as F
@@ -83,7 +83,7 @@ class DyGraphConv2d(nn.Module):
         if sr_ratio is not None:  # and sr_ratio > 1:
             # x_reduce = F.adaptive_avg_pool2d(x, (height // sr_ratio, width // sr_ratio))
             # pos_x_reduce = F.adaptive_avg_pool2d(pos_x, (height // sr_ratio, width // sr_ratio))
-            alpha = sqrt(height / width)
+            alpha = math.sqrt(height / width)
             x_reduce = F.adaptive_avg_pool2d(x, (round(7 * alpha), round(7 / alpha)))
             pos_x_reduce = F.adaptive_avg_pool2d(pos_x, (round(7 * alpha), round(7 / alpha)))
         else:
@@ -235,8 +235,8 @@ def get_2d_relative_pos(pos_x, pos_y):
     Calculate the relative position between two 2d position embeddings.
     :param pos_x: (d_model, height_x, width_x)
     :param pos_y: (d_model, height_y, width_y)
-        :return: relative position (height_x*width_x, height_y*width_y)
-        """
+    :return: relative position (height_x*width_x, height_y*width_y)
+    """
     d_model, _, _ = pos_x.shape
     pos_x = pos_x.reshape(d_model, -1)  # (d_model, num_points_x)
     pos_y = pos_y.reshape(d_model, -1)  # (d_model, num_points_y)

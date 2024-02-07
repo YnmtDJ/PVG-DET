@@ -156,12 +156,12 @@ def test_for_evaluate():
     dataloader_test = DataLoader(dataset_test, batch_size=4, shuffle=False, drop_last=False, collate_fn=collate_fn)
 
     opts = get_opts()  # get the options
-    opts.device = "cuda"
+    opts.device = "cpu"
     device = torch.device(opts.device)
     opts.dataset_name = "VisDrone"
 
     model = build_fcos(opts)
-    model.load_state_dict(torch.load("C:\\Users\\16243\\Downloads\\checkpoint.pth")["model"])
+    model.load_state_dict(torch.load("C:\\Users\\hu.nan\\Downloads\\checkpoint.pth", map_location='cpu')["model"])
     model.eval()
 
     with torch.no_grad():

@@ -13,7 +13,7 @@ class PyramidBackbone(nn.Module):
     def __init__(self):
         super(PyramidBackbone, self).__init__()
         channels = [64, 128, 256, 512]
-        blocks = [2, 2, 6, 2]
+        blocks = [2, 2, 2, 2]
         sr_ratios = [4, 2, 1, 1]
         self.out_channels = 256
         self.backbone = PyramidViG(blocks, channels, sr_ratios)
