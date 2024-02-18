@@ -13,7 +13,7 @@ from tqdm import tqdm
 
 from dataset.datasets import create_dataset, create_visdrone_dataset
 from evaluate import evaluate_coco
-from model import build_retinanet, build_fcos
+from model import build_retinanet, build_fcos, build
 from model.fcos.fcos import FCOS, FCOSHead, FCOSClassificationHead, FCOSRegressionHead, FCOS_ResNet50_FPN_Weights
 from util.misc import collate_fn, build_lr_scheduler, show_image
 from util.option import get_opts
@@ -153,15 +153,15 @@ def func3():
 
 def test_for_evaluate():
     dataset_test = create_visdrone_dataset("dataset/VisDrone/", "test")
-    dataloader_test = DataLoader(dataset_test, batch_size=4, shuffle=False, drop_last=False, collate_fn=collate_fn)
+    dataloader_test = DataLoader(dataset_test, batch_size=1, shuffle=False, drop_last=False, collate_fn=collate_fn)
 
     opts = get_opts()  # get the options
-    opts.device = "cpu"
+    opts.device = "cuda"
     device = torch.device(opts.device)
     opts.dataset_name = "VisDrone"
 
     model = build_fcos(opts)
-    model.load_state_dict(torch.load("C:\\Users\\hu.nan\\Downloads\\checkpoint.pth", map_location='cpu')["model"])
+    # model.load_state_dict(torch.load("C:\\Users\\hu.nan\\Downloads\\checkpoint.pth", map_location='cpu')["model"])
     model.eval()
 
     with torch.no_grad():
@@ -171,27 +171,27 @@ def test_for_evaluate():
             targets = [{k: v.to(device) if hasattr(v, 'to') else v for k, v in target.items()} for target in targets]
             predictions = model(images)
 
-            for j, target in enumerate(targets):
-                height, width = target["origin_size"]  # image size
-                prediction = predictions[j]
-                predict_num = prediction['labels'].shape[0]
-
-                # convert the boxes format
-                target_boxes = box_convert(target['boxes'], 'xyxy', 'xywh')
-                predict_boxes = box_convert(prediction['boxes'], 'xyxy', 'xywh')
-
-                gt = torch.cat([target_boxes, target["scores"].unsqueeze(-1), target["labels"].unsqueeze(-1),
-                                target["truncations"].unsqueeze(-1), target["occlusions"].unsqueeze(-1)],
-                               dim=1).cpu().numpy().astype(np.int32)
-
-                const = -torch.ones([predict_num, 1], dtype=torch.int32).to(device)  # constant tensor -1
-                det = torch.cat([predict_boxes, prediction["scores"].unsqueeze(-1), prediction["labels"].unsqueeze(-1),
-                                 const, const], dim=1).cpu().numpy()
-
-                all_gt.append(gt)
-                all_det.append(det)
-                all_height.append(height)
-                all_width.append(width)
+            # for j, target in enumerate(targets):
+            #     height, width = target["origin_size"]  # image size
+            #     prediction = predictions[j]
+            #     predict_num = prediction['labels'].shape[0]
+            #
+            #     # convert the boxes format
+            #     target_boxes = box_convert(target['boxes'], 'xyxy', 'xywh')
+            #     predict_boxes = box_convert(prediction['boxes'], 'xyxy', 'xywh')
+            #
+            #     gt = torch.cat([target_boxes, target["scores"].unsqueeze(-1), target["labels"].unsqueeze(-1),
+            #                     target["truncations"].unsqueeze(-1), target["occlusions"].unsqueeze(-1)],
+            #                    dim=1).cpu().numpy().astype(np.int32)
+            #
+            #     const = -torch.ones([predict_num, 1], dtype=torch.int32).to(device)  # constant tensor -1
+            #     det = torch.cat([predict_boxes, prediction["scores"].unsqueeze(-1), prediction["labels"].unsqueeze(-1),
+            #                      const, const], dim=1).cpu().numpy()
+            #
+            #     all_gt.append(gt)
+            #     all_det.append(det)
+            #     all_height.append(height)
+            #     all_width.append(width)
 
         # evaluate the results
         ap_all, ap_50, ap_75, ar_1, ar_10, ar_100, ar_500 = eval_det(all_gt, all_det, all_height, all_width)
@@ -199,4 +199,11 @@ def test_for_evaluate():
 
 
 if __name__ == '__main__':
-    test_for_evaluate()
+    opts = get_opts()  # get the options
+    opts.device = "cuda"
+    device = torch.device(opts.device)
+    opts.dataset_name = "VisDrone"
+
+    model, criterion = build(opts)
+
+    torch.save(model.state_dict(), "./model.pth")
