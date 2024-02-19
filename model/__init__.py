@@ -12,18 +12,12 @@ def build(opts):
     :param opts: The options.
     :return: model, criterion
     """
-    device = torch.device(opts.device)
-    if opts.dataset_name == "COCO":
-        num_classes = 91  # because the coco dataset max label id is 90, so we set the num_classes to 91
-    elif opts.dataset_name == "VisDrone":
-        num_classes = 12  # because the visdrone dataset max label id is 11, so we set the num_classes to 12
-    elif opts.dataset_name == "ImageNet":
-        raise NotImplementedError("ImageNet dataset is not implemented yet.")
-    else:
-        num_classes = 20  # default num_classes
-
     #  TODO: try different models
-    model = build_fcos(opts)  # DeGCN(num_classes).to(device)
-    criterion = SetCriterion(num_classes).to(device)
-
+    if opts.baseline == 'RetinaNet':
+        model = build_retinanet(opts)
+    elif opts.baseline == 'FCOS':
+        model = build_fcos(opts)
+    else:
+        raise ValueError("Unknown baseline.")
+    criterion = SetCriterion(opts.num_classes).to(torch.device(opts.device))
     return model, criterion

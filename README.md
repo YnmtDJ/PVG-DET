@@ -28,8 +28,10 @@ Objects365
 [Spotting Birds](https://github.com/IIM-TTIJ/MVA2023SmallObjectDetection4SpottingBirds) 10G  
 
 ## Model Setting
-COCO: [16, 32, 64, 128, 256], (400, 667), [96, 160, 416, 640], [2, 2, 6, 2], 96  
-VisDrone: [8, 16, 32, 64, 128], (800, 1333), [64, 128, 256, 384], [2, 2, 2, 2], 256  
+COCO: 91, ()  
+VisDrone: 12, 4, 6e-4, 2, 18, (800, 1333)  
+FCOS: VisDrone(*3, *6) COCO(*4, *8)  
+RetinaNet: VisDrone(8, 16, 32, 64, 128) COCO(32, 64, 128, 256, 512)  
 
 ## TODO
-norm, experiment
+experiment

@@ -60,7 +60,9 @@ def override_options(opts, checkpoint):
     :return:
     """
     # the keys need to be overridden
-    keys = {'dataset_name', 'batch_size', 'epochs', 'warmup_epochs', 'lr'}
+    keys = {'dataset_name',
+            'baseline', 'num_classes', 'min_size', 'max_size', 'k', 'gcn', 'drop_prob',
+            'batch_size', 'epochs', 'warmup_epochs', 'lr'}
     for key in keys:
         setattr(opts, key, getattr(checkpoint['opts'], key))
     opts.start_epoch = checkpoint['epoch'] + 1

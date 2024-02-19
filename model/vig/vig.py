@@ -32,6 +32,8 @@ class ViG(nn.Module):
         n_knn = [int(x.item()) for x in torch.linspace(k, 2*k, n_blocks)]  # number of neighbors
         max_dilation = (min_size[0]//16)*(min_size[1]//16) // max(n_knn)
 
+        self.stem = Stem16(3, d_model)
+        self.pos_embed = PositionEmbedding2d()
         if use_dilation:
             self.backbone = nn.Sequential(*[
                 nn.Sequential(
@@ -50,6 +52,8 @@ class ViG(nn.Module):
             ])
 
     def forward(self, x):
+        x = self.stem(x)  # (batch_size, d_model, height/16, width/16)
+        x = self.pos_embed(x) + x
         for i in range(self.n_blocks):
             x = self.backbone[i](x)  # (batch_size, d_model, height, width)
         return x
@@ -75,11 +79,11 @@ class PyramidViG(nn.Module):
         # the length of blocks, channels and sr_ratios must be equal
         assert len(blocks) == len(channels) and len(blocks) == len(sr_ratios)
         if channels is None:
-            channels = [64, 128, 256, 384]
+            channels = [64, 128, 256, 512]
         if sr_ratios is None:
-            sr_ratios = [4, 2, 1, 1]
+            sr_ratios = [8, 4, 2, 1]
         if blocks is None:
-            blocks = [2, 2, 6, 2]
+            blocks = [1, 2, 3, 2]
         self.blocks = blocks
         n_blocks = sum(blocks)
 
@@ -111,11 +115,9 @@ class PyramidViG(nn.Module):
                 idx += 1
             self.backbone.append(block)
 
-    def forward(self, x, return_intermediate=False):
+    def forward(self, x):
         """
         :param x: The input images.
-        :param return_intermediate: If True, return the intermediate features. ( excluding the first layer )
-                                    Otherwise, return the last features.
         :return: A single Tensor or an OrderedDict[Tensor]
         """
         x = self.stem(x)  # (batch_size, channels[0], height/4, width/4)
@@ -127,10 +129,7 @@ class PyramidViG(nn.Module):
             if i > 0:  # do not store features of the first layer
                 features[str(i)] = x
 
-        if return_intermediate:
-            return features
-        else:
-            return x
+        return features
 
 
 class Stem16(nn.Module):
@@ -193,3 +192,10 @@ class Stem4(nn.Module):
     def forward(self, x):
         x = self.stem(x)
         return x
+
+
+def pyramid_vig_s(opts):
+    blocks = [1, 2, 3, 2]
+    channels = [64, 128, 256, 512]
+    sr_ratios = [8, 4, 2, 1]
+    return PyramidViG(blocks, channels, sr_ratios, opts.k, opts.gcn, opts.drop_prob)

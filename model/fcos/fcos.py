@@ -11,7 +11,7 @@ from torchvision.models._meta import _COCO_CATEGORIES
 from torchvision.models.detection import _utils as det_utils
 from torchvision.models.detection.anchor_utils import AnchorGenerator
 from torchvision.models.detection.transform import GeneralizedRCNNTransform
-from torchvision.ops import boxes as box_ops, generalized_box_iou_loss, sigmoid_focal_loss, distance_box_iou_loss
+from torchvision.ops import boxes as box_ops, generalized_box_iou_loss, sigmoid_focal_loss
 from torchvision.transforms._presets import ObjectDetection
 from torchvision.utils import _log_api_usage_once
 
@@ -89,7 +89,7 @@ class FCOSHead(nn.Module):
 
         # regression loss: GIoU loss
         # TODO: try to use different box loss
-        loss_bbox_reg = distance_box_iou_loss(
+        loss_bbox_reg = generalized_box_iou_loss(
             pred_boxes[foregroud_mask],
             all_gt_boxes_targets[foregroud_mask],
             reduction="sum",
@@ -461,9 +461,9 @@ class FCOS(nn.Module):
 
             # each anchor is only responsible for certain scale range.
             # TODO: try to use different scale range for each level(*4, *8 origin)
-            lower_bound = anchor_sizes * 2
+            lower_bound = anchor_sizes * 3
             lower_bound[: num_anchors_per_level[0]] = 0
-            upper_bound = anchor_sizes * 4
+            upper_bound = anchor_sizes * 6
             upper_bound[-num_anchors_per_level[-1] :] = float("inf")
             pairwise_dist = pairwise_dist.max(dim=2).values
             pairwise_match &= (pairwise_dist > lower_bound[:, None]) & (pairwise_dist < upper_bound[:, None])

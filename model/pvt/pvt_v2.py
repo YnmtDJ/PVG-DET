@@ -295,7 +295,7 @@ class PyramidVisionTransformerV2(nn.Module):
 
         return outs
 
-    def forward(self, x, return_intermediate=True):
+    def forward(self, x):
         x = self.forward_features(x)
         # x = self.head(x)
 
