@@ -42,7 +42,6 @@ def dense_knn_matrix(x, y, relative_pos, k=16):
     :param k: The number of neighbors
     :return: The indices of nearest neighbors and center - (2, batch_size, n_points, k)
     """
-    # TODO: dist += relative_pos or dist -= relative_pos ?
     x = x.transpose(2, 1).squeeze(-1)
     y = y.transpose(2, 1).squeeze(-1)
     batch_size, n_points, _ = x.shape

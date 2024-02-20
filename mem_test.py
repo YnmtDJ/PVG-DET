@@ -1,21 +1,15 @@
-import random
-import time
 from collections import Counter
 
 import numpy as np
 import torch
 from matplotlib import pyplot as plt
-from pycocotools.cocoeval import COCOeval
 from torch.utils.data import DataLoader
-from torchvision.models.detection.transform import GeneralizedRCNNTransform
 from torchvision.ops import box_convert
 from tqdm import tqdm
 
 from dataset.datasets import create_dataset, create_visdrone_dataset
-from evaluate import evaluate_coco
 from model import build_retinanet, build
-from model.fcos.fcos import FCOS, FCOSHead, FCOSClassificationHead, FCOSRegressionHead, FCOS_ResNet50_FPN_Weights
-from util.misc import collate_fn, build_lr_scheduler, show_image
+from util.misc import collate_fn, show_image
 from util.option import get_opts
 from util.visdrone_eval import eval_det
 

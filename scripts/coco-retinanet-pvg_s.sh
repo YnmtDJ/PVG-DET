@@ -1,0 +1,14 @@
+python ../main.py --dataset_root=../dataset \
+                  --dataset_name=COCO \
+                  --baseline=retinanet \
+                  --backbone=pvg_s \
+                  --num_classes=91 \
+                  --min_size=400 \
+                  --max_size=667 \
+                  --batch_size=8 \
+                  --epochs=12 \
+                  --warmup_epochs=1 \
+                  --lr=0.01 \
+                  --device=cuda \
+                  --checkpoint_path=../checkpoint/coco/retinanet/pvg_s/checkpoint.pth \
+                  --log_dir=../log/coco/retinanet/pvg_s

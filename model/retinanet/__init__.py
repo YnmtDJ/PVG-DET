@@ -19,15 +19,32 @@ def build_retinanet(opts):
     :param opts: The options.
     :return: model
     """
-    backbone = pvg_s(opts.k, opts.gcn, opts.drop_prob)
-    backbone = BackboneWithFPN(backbone, [128, 256, 512], LastLevelP6P7(512, 256))
-    # backbone = resnet50()
-    # backbone = _resnet_fpn_extractor(
-    #     backbone, 5, returned_layers=[2, 3, 4], extra_blocks=LastLevelP6P7(2048, 256)
-    # )
-    anchor_sizes = tuple((x, int(x * 2 ** (1.0 / 3)), int(x * 2 ** (2.0 / 3))) for x in [8, 16, 32, 64, 128])
-    aspect_ratios = ((0.5, 1.0, 2.0),) * len(anchor_sizes)
+    if opts.backbone == 'pvg_s':
+        backbone = pvg_s(opts.k, opts.gcn, opts.drop_prob)
+        backbone = BackboneWithFPN(
+            backbone, backbone.out_channels_list, 256, LastLevelP6P7(backbone.out_channels_list[-1], 256)
+        )
+    elif opts.backbone == 'resnet50':
+        backbone = resnet50()
+        backbone = _resnet_fpn_extractor(
+            backbone, 5, returned_layers=[2, 3, 4], extra_blocks=LastLevelP6P7(2048, 256)
+        )
+    else:
+        raise ValueError("Unknown backbone.")
+
+    # TODO: different dataset design different anchor
+    if opts.dataset_name == 'COCO':
+        anchor_sizes = tuple((x, int(x * 2 ** (1.0 / 3)), int(x * 2 ** (2.0 / 3))) for x in [32, 64, 128, 256, 512])
+        aspect_ratios = ((0.5, 1.0, 2.0),) * len(anchor_sizes)
+    elif opts.dataset_name == 'VisDrone':
+        anchor_sizes = tuple((x, int(x * 2 ** (1.0 / 3)), int(x * 2 ** (2.0 / 3))) for x in [8, 16, 32, 64, 128])
+        aspect_ratios = ((0.5, 1.0, 2.0),) * len(anchor_sizes)
+    else:
+        anchor_sizes = None
+        aspect_ratios = None
+        raise ValueError("Unknown dataset name.")
     anchor_generator = AnchorGenerator(anchor_sizes, aspect_ratios)
+
     head = RetinaNetHead(
         backbone.out_channels,
         anchor_generator.num_anchors_per_location()[0],
@@ -35,6 +52,8 @@ def build_retinanet(opts):
         norm_layer=partial(nn.GroupNorm, 32),
     )
     head.regression_head._loss_type = "giou"
+
+    device = torch.device(opts.device)
     model = RetinaNet(backbone, opts.num_classes, opts.min_size, opts.max_size,
-                      anchor_generator=anchor_generator, head=head).to(torch.device(opts.device))
+                      anchor_generator=anchor_generator, head=head).to(device)
     return model

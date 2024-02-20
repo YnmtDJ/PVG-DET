@@ -84,6 +84,7 @@ class PyramidViG(nn.Module):
             sr_ratios = [8, 4, 2, 1]
         if blocks is None:
             blocks = [1, 2, 3, 2]
+        self.out_channels_list = channels[1:]  # the output channels of each layer, not including the first layer
         self.blocks = blocks
         n_blocks = sum(blocks)
 
