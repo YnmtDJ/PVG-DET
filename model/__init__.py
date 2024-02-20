@@ -6,9 +6,9 @@ from model.vig.vig import pvg_s
 
 def build(opts):
     """
-    Build the model and criterion.
+    Build the model.
     :param opts: The options.
-    :return: model, criterion
+    :return: model
     """
     if opts.baseline == 'retinanet':
         model = build_retinanet(opts)

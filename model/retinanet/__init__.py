@@ -54,6 +54,8 @@ def build_retinanet(opts):
     head.regression_head._loss_type = "giou"
 
     device = torch.device(opts.device)
-    model = RetinaNet(backbone, opts.num_classes, opts.min_size, opts.max_size,
-                      anchor_generator=anchor_generator, head=head).to(device)
+    model = RetinaNet(
+        backbone, opts.num_classes, opts.min_size, opts.max_size,
+        anchor_generator=anchor_generator, head=head
+    ).to(device)
     return model
