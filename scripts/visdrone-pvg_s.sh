@@ -1,6 +1,6 @@
 python ../main.py --dataset_root=../dataset \
                   --dataset_name=VisDrone \
-                  --baseline=RetinaNet \
+                  --backbone=pvg_s \
                   --num_classes=12 \
                   --min_size=800 \
                   --max_size=1333 \
@@ -9,5 +9,5 @@ python ../main.py --dataset_root=../dataset \
                   --warmup_epochs=2 \
                   --lr=0.0006 \
                   --device=cuda \
-                  --checkpoint_path=../checkpoint/visdrone/retinanet/checkpoint.pth \
-                  --log_dir=../log/visdrone/retinanet/
+                  --checkpoint_path=../checkpoint/visdrone/fcos/pvg_s/checkpoint.pth \
+                  --log_dir=../log/visdrone/fcos/pvg_s

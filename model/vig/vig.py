@@ -194,8 +194,13 @@ class Stem4(nn.Module):
         return x
 
 
-def pyramid_vig_s(opts):
+def pvg_s(k=9, gcn='MRConv2d', drop_prob=0.1):
+    """
+    :param k: The number of neighbors.
+    :param gcn: The graph convolution type. (MRConv2d, EdgeConv2d, GraphSAGE, GINConv2d)
+    :param drop_prob:  The probability of DropPath.
+    """
     blocks = [1, 2, 3, 2]
     channels = [64, 128, 256, 512]
     sr_ratios = [8, 4, 2, 1]
-    return PyramidViG(blocks, channels, sr_ratios, opts.k, opts.gcn, opts.drop_prob)
+    return PyramidViG(blocks, channels, sr_ratios, k, gcn, drop_prob)

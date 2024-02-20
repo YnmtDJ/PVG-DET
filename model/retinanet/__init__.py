@@ -9,8 +9,8 @@ from torchvision.models.detection.backbone_utils import _resnet_fpn_extractor
 from torchvision.models.detection.retinanet import RetinaNetHead
 from torchvision.ops.feature_pyramid_network import LastLevelP6P7
 
-from ..backbone import BackboneWithFPN
-from ..vig.vig import pyramid_vig_s
+from ..backbone_utils import BackboneWithFPN
+from ..vig.vig import pvg_s
 
 
 def build_retinanet(opts):
@@ -19,7 +19,7 @@ def build_retinanet(opts):
     :param opts: The options.
     :return: model
     """
-    backbone = pyramid_vig_s(opts)
+    backbone = pvg_s(opts.k, opts.gcn, opts.drop_prob)
     backbone = BackboneWithFPN(backbone, [128, 256, 512], LastLevelP6P7(512, 256))
     # backbone = resnet50()
     # backbone = _resnet_fpn_extractor(

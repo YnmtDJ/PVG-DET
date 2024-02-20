@@ -13,7 +13,7 @@ from tqdm import tqdm
 
 from dataset.datasets import create_dataset, create_visdrone_dataset
 from evaluate import evaluate_coco
-from model import build_retinanet, build_fcos, build
+from model import build_retinanet, build
 from model.fcos.fcos import FCOS, FCOSHead, FCOSClassificationHead, FCOSRegressionHead, FCOS_ResNet50_FPN_Weights
 from util.misc import collate_fn, build_lr_scheduler, show_image
 from util.option import get_opts
@@ -133,7 +133,7 @@ def func3():
     device = torch.device(opts.device)
     opts.dataset_name = "VisDrone"
 
-    model = build_fcos(opts)
+    model = build(opts)
     model.load_state_dict(torch.load("C:\\Users\\hu.nan\\Downloads\\visdrone\\6e-4+warmup\\2+4\\checkpoint.pth", map_location="cpu")["model"])
     model.eval()
 
@@ -160,7 +160,7 @@ def test_for_evaluate():
     device = torch.device(opts.device)
     opts.dataset_name = "VisDrone"
 
-    model = build_fcos(opts)
+    model = build(opts)
     # model.load_state_dict(torch.load("C:\\Users\\hu.nan\\Downloads\\checkpoint.pth", map_location='cpu')["model"])
     model.eval()
 
@@ -204,6 +204,6 @@ if __name__ == '__main__':
     device = torch.device(opts.device)
     opts.dataset_name = "VisDrone"
 
-    model, criterion = build(opts)
+    model = build(opts)
 
     torch.save(model.state_dict(), "./model.pth")

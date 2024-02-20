@@ -8,20 +8,19 @@ from util.visdrone_eval import eval_det
 
 
 @torch.no_grad()
-def evaluate(dataset_name, model, criterion, dataloader, epoch, writer):
+def evaluate(dataset_name, model, dataloader, epoch, writer):
     """
     Evaluate the model on the dataset.
     :param dataset_name: The dataset name.
     :param model: The detection model.
-    :param criterion: The criterion for calculating the loss.
     :param dataloader: The validation dataloader.
     :param epoch: Current epoch.
     :param writer: SummaryWriter for writing the log.
     """
     if dataset_name == "COCO":
-        evaluate_coco(model, criterion, dataloader, epoch, writer)
+        evaluate_coco(model, dataloader, epoch, writer)
     elif dataset_name == "VisDrone":
-        evaluate_visdrone(model, criterion, dataloader, epoch, writer)
+        evaluate_visdrone(model, dataloader, epoch, writer)
     elif dataset_name == "ImageNet":
         raise NotImplementedError("ImageNet dataset is not implemented yet.")
     else:
@@ -29,24 +28,18 @@ def evaluate(dataset_name, model, criterion, dataloader, epoch, writer):
 
 
 @torch.no_grad()
-def evaluate_coco(model, criterion, dataloader, epoch, writer):
+def evaluate_coco(model, dataloader, epoch, writer):
     """
     Evaluate the model on COCO dataset.
     :param model: The detection model.
-    :param criterion: The criterion for calculating the loss.
     :param dataloader: The validation dataloader.
     :param epoch: Current epoch.
     :param writer: SummaryWriter for writing the log.
     """
     device = next(model.parameters()).device
     model.eval()
-    criterion.eval()
     results = []
     for i, (images, targets) in enumerate(tqdm(dataloader)):
-        if i % 200 == 0 and torch.cuda.is_available():  # TODO: really need it?
-            torch.cuda.empty_cache()
-            torch.cuda.ipc_collect()
-
         images = [image.to(device) for image in images]
         targets = [{k: v.to(device) if hasattr(v, 'to') else v for k, v in target.items()} for target in targets]
         predictions = model(images)
@@ -91,24 +84,18 @@ def evaluate_coco(model, criterion, dataloader, epoch, writer):
 
 
 @torch.no_grad()
-def evaluate_visdrone(model, criterion, dataloader, epoch, writer):
+def evaluate_visdrone(model, dataloader, epoch, writer):
     """
     Evaluate the model on VisDrone dataset.
     :param model: The detection model.
-    :param criterion: The criterion for calculating the loss.
     :param dataloader: The validation dataloader.
     :param epoch: Current epoch.
     :param writer: SummaryWriter for writing the log.
     """
     device = next(model.parameters()).device
     model.eval()
-    criterion.eval()
     all_gt, all_det, all_height, all_width = [], [], [], []
     for i, (images, targets) in enumerate(tqdm(dataloader)):
-        if i % 200 == 0 and torch.cuda.is_available():  # TODO: really need it?
-            torch.cuda.empty_cache()
-            torch.cuda.ipc_collect()
-
         images = [image.to(device) for image in images]
         targets = [{k: v.to(device) if hasattr(v, 'to') else v for k, v in target.items()} for target in targets]
         predictions = model(images)

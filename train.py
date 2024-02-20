@@ -2,11 +2,10 @@ import torch
 from tqdm import tqdm
 
 
-def train_one_epoch(model, criterion, dataloader, optimizer, lr_scheduler, epoch, writer):
+def train_one_epoch(model, dataloader, optimizer, lr_scheduler, epoch, writer):
     """
     Train the model for one epoch.
     :param model: The detection model.
-    :param criterion: The criterion for calculating the loss.
     :param dataloader: The training dataloader.
     :param optimizer: The optimizer for training model.
     :param lr_scheduler: The learning rate scheduler.
@@ -15,13 +14,8 @@ def train_one_epoch(model, criterion, dataloader, optimizer, lr_scheduler, epoch
     """
     device = next(model.parameters()).device
     model.train()
-    criterion.train()
     avg_loss = {}
     for i, (images, targets) in enumerate(tqdm(dataloader)):
-        if i % 200 == 0 and torch.cuda.is_available():  # TODO: really need it?
-            torch.cuda.empty_cache()
-            torch.cuda.ipc_collect()
-
         images = [image.to(device) for image in images]
         targets = [{k: v.to(device) if hasattr(v, 'to') else v for k, v in target.items()} for target in targets]
         losses = model(images, targets)

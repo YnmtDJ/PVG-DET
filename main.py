@@ -26,7 +26,7 @@ if __name__ == "__main__":
                                 collate_fn=collate_fn)
 
     # prepare the model, criterion, optimizer, lr_scheduler, writer
-    model, criterion = build(opts)
+    model = build(opts)
     optimizer = torch.optim.Adam(model.parameters(), lr=opts.lr)
     lr_scheduler = build_lr_scheduler(optimizer, opts.warmup_epochs * len(dataloader_train),
                                       opts.epochs * len(dataloader_train))
@@ -44,10 +44,10 @@ if __name__ == "__main__":
         start_time = time.time()
         try:
             # train for one epoch
-            train_one_epoch(model, criterion, dataloader_train, optimizer, lr_scheduler, epoch, writer)
+            train_one_epoch(model, dataloader_train, optimizer, lr_scheduler, epoch, writer)
 
             # evaluate on the val dataset
-            evaluate(opts.dataset_name, model, criterion, dataloader_val, epoch, writer)
+            evaluate(opts.dataset_name, model, dataloader_val, epoch, writer)
 
         except Exception as e:
             raise e

@@ -9,7 +9,7 @@ def get_opts():
     parser.add_argument("--dataset_name", type=str, default="VisDrone", help="select the dataset to use")
 
     # model parameters
-    parser.add_argument("--baseline", type=str, default="FCOS", help="the baseline model to use (FCOS, RetinaNet)")
+    parser.add_argument("--backbone", type=str, default="pvg_s", help="the backbone of the model")
     parser.add_argument("--num_classes", type=int, required=True, help="the number of classes in the dataset")
     parser.add_argument("--min_size", type=int, default=800, help="minimum size of the image to be rescaled "
                                                                   "before feeding it to the model")
