@@ -10,11 +10,11 @@ from torchvision.models.detection.faster_rcnn import FastRCNNConvFCHead
 from torchvision.models.detection.rpn import RPNHead
 from torchvision.ops.feature_pyramid_network import LastLevelMaxPool
 
-from model import BackboneWithFPN
+from model.backbone_utils import BackboneWithFPN
 from model.vig.vig import pvg_s
 
 
-def build_faster_rcnn(opts):
+def build_fasterrcnn(opts):
     """
     Build the FasterRCNN model.
     :param opts: The options.
@@ -23,7 +23,8 @@ def build_faster_rcnn(opts):
     if opts.backbone == 'pvg_s':
         backbone = pvg_s(opts.k, opts.gcn, opts.drop_prob)
         backbone = BackboneWithFPN(
-            backbone, backbone.out_channels_list, 256, LastLevelMaxPool(), partial(nn.GroupNorm, 32)
+            backbone, backbone.out_channels_list, 256, ["0", "1", "2", "3"],
+            LastLevelMaxPool(), partial(nn.GroupNorm, 32)
         )
     elif opts.backbone == 'resnet50':
         backbone = resnet50()
