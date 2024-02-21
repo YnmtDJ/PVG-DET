@@ -120,9 +120,9 @@ class CocoDetection(torchvision.datasets.CocoDetection):
         )
 
         if "category_id" in batched_target:
-            target["labels"] = torch.tensor(batched_target["category_id"], dtype=torch.int32)
+            target["labels"] = torch.tensor(batched_target["category_id"], dtype=torch.int64)
         else:
-            target["labels"] = torch.empty(0, dtype=torch.int32)
+            target["labels"] = torch.empty(0, dtype=torch.int64)
 
         return image, target
 
@@ -220,7 +220,7 @@ class VisDroneDetection(Dataset):
             new_format=tv_tensors.BoundingBoxFormat.XYXY,
         )
 
-        target["labels"] = torch.tensor(batched_target["labels"], dtype=torch.int32)
+        target["labels"] = torch.tensor(batched_target["labels"], dtype=torch.int64)
         target["scores"] = torch.tensor(batched_target["scores"], dtype=torch.float32)
         target["truncations"] = torch.tensor(batched_target["truncations"], dtype=torch.int32)
         target["occlusions"] = torch.tensor(batched_target["occlusions"], dtype=torch.int32)

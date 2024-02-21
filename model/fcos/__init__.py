@@ -20,7 +20,7 @@ def build_fcos(opts):
     if opts.backbone == 'pvg_s':
         backbone = pvg_s(opts.k, opts.gcn, opts.drop_prob)
         backbone = BackboneWithFPN(
-            backbone, backbone.out_channels_list, 256, LastLevelP6P7(256, 256)
+            backbone, backbone.out_channels_list[1:], 256, ["1", "2", "3"], LastLevelP6P7(256, 256)
         )
     elif opts.backbone == 'resnet50':
         backbone = resnet50(norm_layer=partial(nn.GroupNorm, 32))

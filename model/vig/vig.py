@@ -84,7 +84,7 @@ class PyramidViG(nn.Module):
             sr_ratios = [8, 4, 2, 1]
         if blocks is None:
             blocks = [1, 2, 3, 2]
-        self.out_channels_list = channels[1:]  # the output channels of each layer, not including the first layer
+        self.out_channels_list = channels
         self.blocks = blocks
         n_blocks = sum(blocks)
 
@@ -127,8 +127,7 @@ class PyramidViG(nn.Module):
         features = OrderedDict()  # store the intermediate features
         for i in range(len(self.blocks)):
             x = self.backbone[i](x)  # (batch_size, channels[i], height/(4*2^i), width/(4*2^i))
-            if i > 0:  # do not store features of the first layer
-                features[str(i)] = x
+            features[str(i)] = x
 
         return features
 

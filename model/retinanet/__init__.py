@@ -22,7 +22,8 @@ def build_retinanet(opts):
     if opts.backbone == 'pvg_s':
         backbone = pvg_s(opts.k, opts.gcn, opts.drop_prob)
         backbone = BackboneWithFPN(
-            backbone, backbone.out_channels_list, 256, LastLevelP6P7(backbone.out_channels_list[-1], 256)
+            backbone, backbone.out_channels_list[1:], 256, ["1", "2", "3"],
+            LastLevelP6P7(backbone.out_channels_list[-1], 256)
         )
     elif opts.backbone == 'resnet50':
         backbone = resnet50()
@@ -54,6 +55,8 @@ def build_retinanet(opts):
     head.regression_head._loss_type = "giou"
 
     device = torch.device(opts.device)
-    model = RetinaNet(backbone, opts.num_classes, opts.min_size, opts.max_size,
-                      anchor_generator=anchor_generator, head=head).to(device)
+    model = RetinaNet(
+        backbone, opts.num_classes, opts.min_size, opts.max_size,
+        anchor_generator=anchor_generator, head=head
+    ).to(device)
     return model
