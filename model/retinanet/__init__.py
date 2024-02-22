@@ -10,6 +10,7 @@ from torchvision.models.detection.retinanet import RetinaNetHead
 from torchvision.ops.feature_pyramid_network import LastLevelP6P7
 
 from ..backbone_utils import BackboneWithFPN
+from ..pvt.pvt_v2 import pvt_v2_b2_li
 from ..vig.vig import pvg_s
 
 
@@ -29,6 +30,12 @@ def build_retinanet(opts):
         backbone = resnet50()
         backbone = _resnet_fpn_extractor(
             backbone, 5, returned_layers=[2, 3, 4], extra_blocks=LastLevelP6P7(2048, 256)
+        )
+    elif opts.backbone == 'pvt_v2_b2_li':
+        backbone = pvt_v2_b2_li()
+        backbone = BackboneWithFPN(
+            backbone, [128, 256, 512], 256, ["1", "2", "3"],
+            LastLevelP6P7(512, 256)
         )
     else:
         raise ValueError("Unknown backbone.")

@@ -200,7 +200,7 @@ def pvg_s(k=9, gcn='MRConv2d', drop_prob=0.1):
     :param gcn: The graph convolution type. (MRConv2d, EdgeConv2d, GraphSAGE, GINConv2d)
     :param drop_prob:  The probability of DropPath.
     """
-    blocks = [1, 2, 3, 2]
+    blocks = [3, 4, 6, 3]
     channels = [64, 128, 256, 512]
     sr_ratios = [8, 4, 2, 1]
     return PyramidViG(blocks, channels, sr_ratios, k, gcn, drop_prob)

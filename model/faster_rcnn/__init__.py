@@ -11,6 +11,7 @@ from torchvision.models.detection.rpn import RPNHead
 from torchvision.ops.feature_pyramid_network import LastLevelMaxPool
 
 from model.backbone_utils import BackboneWithFPN
+from model.pvt.pvt_v2 import pvt_v2_b2_li
 from model.vig.vig import pvg_s
 
 
@@ -29,6 +30,12 @@ def build_fasterrcnn(opts):
     elif opts.backbone == 'resnet50':
         backbone = resnet50()
         backbone = _resnet_fpn_extractor(backbone, 5, norm_layer=partial(nn.GroupNorm, 32))
+    elif opts.backbone == 'pvt_v2_b2_li':
+        backbone = pvt_v2_b2_li()
+        backbone = BackboneWithFPN(
+            backbone, [64, 128, 256, 512], 256, ["0", "1", "2", "3"],
+            LastLevelMaxPool(), partial(nn.GroupNorm, 32)
+        )
     else:
         raise ValueError("Unknown backbone.")
 
