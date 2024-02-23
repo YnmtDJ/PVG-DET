@@ -83,7 +83,7 @@ class PyramidViG(nn.Module):
         if sr_ratios is None:
             sr_ratios = [8, 4, 2, 1]
         if blocks is None:
-            blocks = [1, 2, 3, 2]
+            blocks = [3, 4, 6, 3]
         self.out_channels_list = channels
         self.blocks = blocks
         n_blocks = sum(blocks)
