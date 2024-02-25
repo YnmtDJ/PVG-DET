@@ -327,6 +327,14 @@ def _conv_filter(state_dict, patch_size=16):
     return out_dict
 
 
+def pvt_v2_b1_li():
+    return PyramidVisionTransformerV2(
+        patch_size=4, embed_dims=[64, 128, 256, 512], num_heads=[1, 2, 4, 8], mlp_ratios=[8, 8, 4, 4],
+        qkv_bias=True, norm_layer=partial(nn.LayerNorm, eps=1e-6), depths=[2, 2, 2, 2], sr_ratios=[8, 4, 2, 1],
+        drop_rate=0.0, drop_path_rate=0.1, linear=True
+    )
+
+
 def pvt_v2_b2_li():
     return PyramidVisionTransformerV2(
         patch_size=4, embed_dims=[64, 128, 256, 512], num_heads=[1, 2, 4, 8], mlp_ratios=[8, 8, 4, 4],
