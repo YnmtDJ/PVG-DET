@@ -11,6 +11,7 @@ from train import train_one_epoch
 from util.misc import collate_fn, override_options, save_checkpoint, build_lr_scheduler
 from util.option import get_opts
 
+
 if __name__ == "__main__":
     opts = get_opts()  # get the options
     checkpoint = None
@@ -57,3 +58,5 @@ if __name__ == "__main__":
             save_checkpoint(opts, model, optimizer, lr_scheduler, epoch)
             end_time = time.time()
             print("epoch {} cost: {}s".format(epoch, end_time - start_time))
+
+    writer.close()  # close the writer to make sure that all events have been written to disk
