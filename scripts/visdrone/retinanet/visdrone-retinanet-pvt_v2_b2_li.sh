@@ -1,0 +1,14 @@
+python ../main.py --dataset_root=../dataset \
+                  --dataset_name=VisDrone \
+                  --baseline=retinanet \
+                  --backbone=pvt_v2_b2_li \
+                  --num_classes=12 \
+                  --min_size=608 \
+                  --max_size=1024 \
+                  --batch_size=4 \
+                  --epochs=20 \
+                  --warmup_epochs=2 \
+                  --lr=0.0006 \
+                  --device=cuda \
+                  --checkpoint_path=../checkpoint/visdrone/retinanet/pvt_v2_b2_li/checkpoint.pth \
+                  --log_dir=../log/visdrone/retinanet/pvt_v2_b2_li
