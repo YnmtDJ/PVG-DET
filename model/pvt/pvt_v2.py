@@ -1,3 +1,7 @@
+"""
+This is the file that contains the pvt_v2 model.
+Mostly copied from https://github.com/whai362/PVT
+"""
 import math
 from collections import OrderedDict
 from functools import partial
