@@ -1,4 +1,4 @@
-# GCN_DETECTION
+# PVG-DET
 GCN for Object Detection
 
 # Requirements
