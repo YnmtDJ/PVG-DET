@@ -19,7 +19,7 @@ def evaluate(dataset_name, model, dataloader, epoch, writer):
     """
     if dataset_name == "COCO":
         evaluate_coco(model, dataloader, epoch, writer)
-    elif dataset_name == "VisDrone":
+    elif dataset_name == "visdrone":
         evaluate_visdrone(model, dataloader, epoch, writer)
     elif dataset_name == "ImageNet":
         raise NotImplementedError("ImageNet dataset is not implemented yet.")

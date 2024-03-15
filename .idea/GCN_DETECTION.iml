@@ -6,7 +6,7 @@
       <excludeFolder url="file://$MODULE_DIR$/dataset/COCO" />
       <excludeFolder url="file://$MODULE_DIR$/log" />
       <excludeFolder url="file://$MODULE_DIR$/checkpoint" />
-      <excludeFolder url="file://$MODULE_DIR$/dataset/VisDrone" />
+      <excludeFolder url="file://$MODULE_DIR$/dataset/visdrone" />
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />

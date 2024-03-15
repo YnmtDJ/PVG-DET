@@ -22,7 +22,7 @@ def create_dataset(dataset_root: str, dataset_name: str):
     if dataset_name == "COCO":
         dataset_train = create_coco_dataset(os.path.join(dataset_root, dataset_name), "train")
         dataset_val = create_coco_dataset(os.path.join(dataset_root, dataset_name), "val")
-    elif dataset_name == "VisDrone":
+    elif dataset_name == "visdrone":
         dataset_train = create_visdrone_dataset(os.path.join(dataset_root, dataset_name), "train")
         dataset_val = create_visdrone_dataset(os.path.join(dataset_root, dataset_name), "val")
     elif dataset_name == "ImageNet":
@@ -230,7 +230,7 @@ class VisDroneDetection(Dataset):
 
 if __name__ == "__main__":
     # demo for the create_dataset()
-    dataset_train, dataset_val = create_dataset("./", "VisDrone")
+    dataset_train, dataset_val = create_dataset("./", "visdrone")
     for i in range(len(dataset_train)):
         image, target = dataset_train[i]
         show_image(image, target, "xyxy")

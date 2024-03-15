@@ -34,4 +34,6 @@ FCOS: VisDrone(*3, *6) COCO(*4, *8)
 RetinaNet: VisDrone(8, 16, 32, 64, 128) COCO(32, 64, 128, 256, 512)  
 
 ## TODO
-experiment
+keep batch_size lr same
+relative_pos
+batched_index_select

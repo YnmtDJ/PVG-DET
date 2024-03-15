@@ -1,9 +1,13 @@
+import os
+os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
+
 from collections import Counter
 
 import numpy as np
 import torch
 from matplotlib import pyplot as plt
 from torch.utils.data import DataLoader
+from torchvision.models.detection.transform import GeneralizedRCNNTransform
 from torchvision.ops import box_convert
 from tqdm import tqdm
 
@@ -98,24 +102,23 @@ def fun1():
 def func2():
     dataset_train, dataset_val = create_dataset("./dataset", "VisDrone")
     dataloader_train = DataLoader(dataset_train, batch_size=1, shuffle=True, drop_last=False, collate_fn=collate_fn)
-    # transform = GeneralizedRCNNTransform([256, 272, 288, 304, 320, 336, 352], 512, [0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
-    areas = []
+    transform = GeneralizedRCNNTransform(800, 1333, [0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+    lengths = []
     for i, (images, targets) in enumerate(tqdm(dataloader_train)):
-        # images, targets = transform(images, targets)
+        images, targets = transform(images, targets)
         target = targets[0]
-        height, width = target['origin_size']
         boxes = box_convert(target["boxes"], 'xyxy', 'xywh')
-        areas.extend([round(val, 4) for val in torch.sqrt((boxes[:, 2]*boxes[:, 3])/(width*height)).tolist()])
+        lengths.extend([round(val) for val in torch.sqrt(boxes[:, 2]*boxes[:, 3]).tolist()])
 
-    counts = Counter(areas)
+    counts = Counter(lengths)
     # 将Counter结果转换为列表形式
     counts = list(counts.items())
-    # 将键转换为字符串并进行排序
-    sorted_counts = sorted(counts, key=lambda x: str(x[0]))
+    # 将键进行排序
+    sorted_counts = sorted(counts, key=lambda x: x[0])
 
     # 创建条形图
     plt.bar([str(count[0]) for count in sorted_counts], [count[1] for count in sorted_counts])
-    plt.xlabel('areas')
+    plt.xlabel('lengths')
     plt.ylabel('Count')
     plt.title('Value Distribution')
     plt.show()
@@ -193,11 +196,12 @@ def test_for_evaluate():
 
 
 if __name__ == '__main__':
-    opts = get_opts()  # get the options
-    opts.device = "cuda"
-    device = torch.device(opts.device)
-    opts.dataset_name = "VisDrone"
-
-    model = build(opts)
-
-    torch.save(model.state_dict(), "./model.pth")
+    func2()
+    # opts = get_opts()  # get the options
+    # opts.device = "cuda"
+    # device = torch.device(opts.device)
+    # opts.dataset_name = "VisDrone"
+    #
+    # model = build(opts)
+    #
+    # torch.save(model.state_dict(), "./model.pth")
