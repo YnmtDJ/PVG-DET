@@ -19,7 +19,7 @@ def build_fasterrcnn(backbone, num_classes, min_size, max_size):
     :param max_size: Maximum size of the image to be rescaled before feeding it to the backbone
     :return: model
     """
-    anchor_sizes = ((8,), (16,), (32,), (64,), (128,))
+    anchor_sizes = ((16,), (32,), (64,), (128,), (256,))
     aspect_ratios = ((0.5, 1.0, 2.0),) * len(anchor_sizes)
     rpn_anchor_generator = AnchorGenerator(anchor_sizes, aspect_ratios)
 
