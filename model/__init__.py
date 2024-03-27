@@ -9,7 +9,7 @@ from torchvision.ops.feature_pyramid_network import LastLevelMaxPool
 from model.backbone_utils import BackboneWithFPN
 from model.faster_rcnn import build_fasterrcnn
 from model.fcos import build_fcos
-from model.pvt.pvt_v2 import pvt_v2_b2_li, pvt_v2_b1_li
+from model.pvt.pvt_v2 import pvt_v2_b2_li, pvt_v2_b1
 from model.retinanet import build_retinanet
 from model.vig.vig import pvg_s, pvg_t
 
@@ -62,8 +62,8 @@ def build_backbone(opts):
     elif opts.backbone.startswith('pvt'):
         if opts.backbone == 'pvt_v2_b2_li':
             backbone = pvt_v2_b2_li()
-        elif opts.backbone == 'pvt_v2_b1_li':
-            backbone = pvt_v2_b1_li()
+        elif opts.backbone == 'pvt_v2_b1':
+            backbone = pvt_v2_b1()
         else:
             raise ValueError("Unknown backbone.")
         backbone = BackboneWithFPN(
