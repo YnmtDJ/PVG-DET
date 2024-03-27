@@ -80,12 +80,12 @@ class DyGraphConv2d(nn.Module):
         # TODO: Spatial Reduction or Linear Spatial Reduction
         # get the spatial reduction of the input feature and position embedding
         pos_x = self.pos_embed(x)  # (1, d_model, height, width)
-        if sr_ratio is not None:  # and sr_ratio > 1:
-            # x_reduce = F.adaptive_avg_pool2d(x, (height // sr_ratio, width // sr_ratio))
-            # pos_x_reduce = F.adaptive_avg_pool2d(pos_x, (height // sr_ratio, width // sr_ratio))
-            alpha = math.sqrt(height / width)
-            x_reduce = F.adaptive_avg_pool2d(x, (round(7 * alpha), round(7 / alpha)))
-            pos_x_reduce = F.adaptive_avg_pool2d(pos_x, (round(7 * alpha), round(7 / alpha)))
+        if sr_ratio is not None:
+            x_reduce = F.adaptive_avg_pool2d(x, (height // sr_ratio, width // sr_ratio))
+            pos_x_reduce = F.adaptive_avg_pool2d(pos_x, (height // sr_ratio, width // sr_ratio))
+            # alpha = math.sqrt(height / width)
+            # x_reduce = F.adaptive_avg_pool2d(x, (round(7 * alpha), round(7 / alpha)))
+            # pos_x_reduce = F.adaptive_avg_pool2d(pos_x, (round(7 * alpha), round(7 / alpha)))
         else:
             x_reduce = x
             pos_x_reduce = pos_x

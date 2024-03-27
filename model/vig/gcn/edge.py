@@ -43,7 +43,7 @@ def dense_knn_matrix(x, y, relative_pos, k=16):
     :return: The indices of nearest neighbors and center - (2, batch_size, n_points, k)
     """
     x = x.transpose(2, 1).squeeze(-1)
-    y = y.transpose(2, 1).squeeze(-1)
+    y = y.squeeze(-1)
     batch_size, n_points, _ = x.shape
     # memory efficient implementation
     n_part = 10000
@@ -54,15 +54,15 @@ def dense_knn_matrix(x, y, relative_pos, k=16):
             start_idx = n_part * i
             end_idx = min(n_points, n_part * (i + 1))
             x_part = x[:, start_idx:end_idx, :]  # (batch_size, n_part, num_dims)
-            dist = torch.cdist(x_part, y, p=2)  # (batch_size, n_part, m_points)
+            dist = torch.matmul(x_part, y)  # (batch_size, n_part, m_points)
             dist += relative_pos[:, start_idx:end_idx, :]  # consider both similarity and relative position
-            _, nn_idx_part = torch.topk(-dist, k=k)  # (batch_size, n_part, k)
+            _, nn_idx_part = torch.topk(dist, k=k)  # (batch_size, n_part, k)
             nn_idx_list += [nn_idx_part]
         nn_idx = torch.cat(nn_idx_list, dim=1)  # (batch_size, n_points, k)
     else:
-        dist = torch.cdist(x, y, p=2)  # (batch_size, n_points, m_points)
+        dist = torch.matmul(x, y)  # (batch_size, n_points, m_points)
         dist += relative_pos  # consider both similarity and relative position
-        _, nn_idx = torch.topk(-dist, k=k)  # (batch_size, n_points, k)
+        _, nn_idx = torch.topk(dist, k=k)  # (batch_size, n_points, k)
     center_idx = torch.arange(0, n_points, device=x.device).expand(batch_size, k, -1).transpose(2, 1)
     return torch.stack((nn_idx, center_idx), dim=0)  # (2, batch_size, n_points, k)
 
