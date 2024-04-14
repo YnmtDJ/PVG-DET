@@ -1,5 +1,7 @@
 import os
 
+from PIL import Image
+
 os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
 
 from collections import Counter
@@ -100,11 +102,11 @@ def fun1():
 
 
 def func2():
-    dataset_train, dataset_val = create_dataset("./dataset", "VisDrone")
-    dataloader_train = DataLoader(dataset_train, batch_size=1, shuffle=True, drop_last=False, collate_fn=collate_fn)
-    transform = GeneralizedRCNNTransform(800, 1333, [0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+    dataset_train, dataset_val = create_dataset("./dataset", "coco")
+    dataloader_val = DataLoader(dataset_val, batch_size=1, shuffle=True, drop_last=False, collate_fn=collate_fn)
+    transform = GeneralizedRCNNTransform(640, 640, [0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
     lengths = []
-    for i, (images, targets) in enumerate(tqdm(dataloader_train)):
+    for i, (images, targets) in enumerate(tqdm(dataloader_val)):
         images, targets = transform(images, targets)
         target = targets[0]
         boxes = box_convert(target["boxes"], 'xyxy', 'xywh')
@@ -201,7 +203,8 @@ def test_for_evaluate():
 
 
 if __name__ == '__main__':
-    test_for_evaluate()
+    func()
+    # test_for_evaluate()
     # opts = get_opts()  # get the options
     # opts.device = "cuda"
     # device = torch.device(opts.device)

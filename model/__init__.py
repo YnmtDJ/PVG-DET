@@ -9,6 +9,7 @@ from torchvision.ops.feature_pyramid_network import LastLevelMaxPool
 from model.backbone_utils import BackboneWithFPN
 from model.faster_rcnn import build_fasterrcnn
 from model.fcos import build_fcos
+from model.mask_rcnn import build_maskrcnn
 from model.pvt.pvt_v2 import pvt_v2_b2_li, pvt_v2_b1
 from model.retinanet import build_retinanet
 from model.vig.vig import pvg_s, pvg_t
@@ -27,6 +28,8 @@ def build(opts):
         model = build_fcos(backbone, opts.num_classes, opts.min_size, opts.max_size)
     elif opts.baseline == 'fasterrcnn':
         model = build_fasterrcnn(backbone, opts.num_classes, opts.min_size, opts.max_size)
+    elif opts.baseline == 'maskrcnn':
+        model = build_maskrcnn(backbone, opts.num_classes, opts.min_size, opts.max_size)
     else:
         raise ValueError("Unknown baseline.")
 

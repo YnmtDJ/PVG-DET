@@ -1,6 +1,9 @@
+import copy
+
 import numpy as np
 import torch
 from pycocotools.cocoeval import COCOeval
+from pycocotools import mask
 from torchvision.ops import box_convert
 from tqdm import tqdm
 
@@ -17,7 +20,7 @@ def evaluate(dataset_name, model, dataloader, epoch, writer):
     :param epoch: Current epoch.
     :param writer: SummaryWriter for writing the log.
     """
-    if dataset_name == "COCO":
+    if dataset_name == "coco":
         evaluate_coco(model, dataloader, epoch, writer)
     elif dataset_name == "visdrone":
         evaluate_visdrone(model, dataloader, epoch, writer)
@@ -48,13 +51,16 @@ def evaluate_coco(model, dataloader, epoch, writer):
             image_id = target['image_id']
             prediction = predictions[j]
             predict_num = prediction['labels'].shape[0]
-            boxes = box_convert(prediction['boxes'], 'xyxy', 'xywh')
+            soft_masks = prediction['masks']
+            masks = torch.zeros_like(soft_masks, dtype=torch.uint8, device="cpu")
+            masks[soft_masks > 0.5] = 1
+            masks = masks.numpy()
             results.extend(
                 [
                     {
                         "image_id": image_id,
                         "category_id": prediction['labels'][k].item(),
-                        "bbox": boxes[k].tolist(),
+                        "segmentation": mask.encode(np.asfortranarray(masks[k][0], np.uint8)),
                         "score": prediction['scores'][k].item(),
                     }
                     for k in range(predict_num)
@@ -66,9 +72,9 @@ def evaluate_coco(model, dataloader, epoch, writer):
         return
 
     # evaluate the results
-    coco_gt = dataloader.dataset.coco
+    coco_gt = copy.deepcopy(dataloader.dataset.coco)
     coco_dt = coco_gt.loadRes(results)
-    coco_eval = COCOeval(coco_gt, coco_dt, "bbox")
+    coco_eval = COCOeval(coco_gt, coco_dt, "segm")
     coco_eval.evaluate()
     coco_eval.accumulate()
     coco_eval.summarize()
