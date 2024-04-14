@@ -60,9 +60,11 @@ def override_options(opts, checkpoint):
     :return:
     """
     # the keys need to be overridden
-    keys = {'dataset_name',
-            'baseline', 'backbone', 'num_classes', 'min_size', 'max_size', 'k', 'gcn', 'drop_prob',
-            'batch_size', 'epochs', 'warmup_epochs', 'lr'}
+    keys = {
+        'dataset_name',
+        'baseline', 'backbone', 'num_classes', 'min_size', 'max_size', 'k', 'gcn', 'drop_prob',
+        'batch_size', 'epochs', 'warmup_epochs', 'lr'
+    }
     for key in keys:
         setattr(opts, key, getattr(checkpoint['opts'], key))
     opts.start_epoch = checkpoint['epoch'] + 1
@@ -95,7 +97,7 @@ def fix_boxes(boxes: tv_tensors.BoundingBoxes):
     :param boxes: The boxes to be fixed.
     """
     num, _ = boxes.shape
-    eps = 1
+    eps = 0.01
     if boxes.format == tv_tensors.BoundingBoxFormat.XYXY:
         x_idx = torch.eq(boxes[:, 0], boxes[:, 2])
         y_idx = torch.eq(boxes[:, 1], boxes[:, 3])

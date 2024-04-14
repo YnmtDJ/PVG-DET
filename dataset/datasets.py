@@ -5,11 +5,12 @@ import torch
 import torchvision
 import torchvision.transforms.v2.functional as v2F
 from PIL import Image
+from pycocotools import mask
 from torch.utils.data import Dataset
 from torchvision import tv_tensors
 
 from dataset.transforms import create_transform
-from util.misc import list_of_dicts_to_dict_of_lists, show_image, fix_boxes
+from util.misc import list_of_dicts_to_dict_of_lists, show_image
 
 
 def create_dataset(dataset_root: str, dataset_name: str):
@@ -19,7 +20,7 @@ def create_dataset(dataset_root: str, dataset_name: str):
     :param dataset_name: select the dataset to use
     :return: dataset_train, dataset_val
     """
-    if dataset_name == "COCO":
+    if dataset_name == "coco":
         dataset_train = create_coco_dataset(os.path.join(dataset_root, dataset_name), "train")
         dataset_val = create_coco_dataset(os.path.join(dataset_root, dataset_name), "val")
     elif dataset_name == "visdrone":
@@ -94,9 +95,6 @@ class CocoDetection(torchvision.datasets.CocoDetection):
         img, target = self.wrap_dataset_for_transforms_v2(img, target)
         if self._transforms is not None:
             img, target = self._transforms(img, target)
-
-        fix_boxes(target["boxes"])  # TODO: really need this?
-
         return img, target
 
     def wrap_dataset_for_transforms_v2(self, image, target):
@@ -105,7 +103,13 @@ class CocoDetection(torchvision.datasets.CocoDetection):
         batched_target = list_of_dicts_to_dict_of_lists(target['annotations'])
         target = {"image_id": target["image_id"], "origin_size": canvas_size}
 
-        if "bbox" in batched_target:
+        if "area" in batched_target:  # TODO: remove the line gt box
+            for index in range(len(batched_target["area"])-1, -1, -1):
+                if batched_target["area"][index] < 0.01:
+                    for key in batched_target:
+                        batched_target[key].pop(index)
+
+        if "bbox" in batched_target and len(batched_target["bbox"]) > 0:
             bbox = batched_target["bbox"]
         else:
             bbox = torch.empty((0, 4))
@@ -119,12 +123,34 @@ class CocoDetection(torchvision.datasets.CocoDetection):
             new_format=tv_tensors.BoundingBoxFormat.XYXY,
         )
 
-        if "category_id" in batched_target:
+        if "segmentation" in batched_target and len(batched_target["segmentation"]) > 0:
+            target["masks"] = tv_tensors.Mask(
+                torch.stack(
+                    [
+                        self.segmentation_to_mask(segmentation, canvas_size=canvas_size)
+                        for segmentation in batched_target["segmentation"]
+                    ]
+                ),
+            )
+        else:
+            target["masks"] = tv_tensors.Mask(
+                torch.empty((0, canvas_size[0], canvas_size[1]), dtype=torch.uint8)
+            )
+
+        if "category_id" in batched_target and len(batched_target["category_id"]) > 0:
             target["labels"] = torch.tensor(batched_target["category_id"], dtype=torch.int64)
         else:
             target["labels"] = torch.empty(0, dtype=torch.int64)
 
         return image, target
+
+    def segmentation_to_mask(self, segmentation, *, canvas_size):
+        segmentation = (
+            mask.frPyObjects(segmentation, *canvas_size)
+            if isinstance(segmentation, dict)
+            else mask.merge(mask.frPyObjects(segmentation, *canvas_size))
+        )
+        return torch.from_numpy(mask.decode(segmentation))
 
 
 class VisDroneDetection(Dataset):

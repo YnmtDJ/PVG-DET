@@ -1,0 +1,14 @@
+python ../main.py --dataset_root=../dataset \
+                  --dataset_name=coco \
+                  --baseline=maskrcnn \
+                  --backbone=resnet50 \
+                  --num_classes=91 \
+                  --min_size=640 \
+                  --max_size=640 \
+                  --batch_size=8 \
+                  --epochs=12 \
+                  --warmup_epochs=1 \
+                  --lr=0.001 \
+                  --device=cuda \
+                  --checkpoint_path=../checkpoint/coco/maskrcnn/resnet50/checkpoint.pth \
+                  --log_dir=../log/coco/maskrcnn/resnet50

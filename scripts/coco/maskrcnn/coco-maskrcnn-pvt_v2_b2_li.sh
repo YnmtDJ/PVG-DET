@@ -1,0 +1,14 @@
+python ../main.py --dataset_root=../dataset \
+                  --dataset_name=coco \
+                  --baseline=maskrcnn \
+                  --backbone=pvt_v2_b2_li \
+                  --num_classes=91 \
+                  --min_size=640 \
+                  --max_size=640 \
+                  --batch_size=8 \
+                  --epochs=12 \
+                  --warmup_epochs=1 \
+                  --lr=0.001 \
+                  --device=cuda \
+                  --checkpoint_path=../checkpoint/coco/maskrcnn/pvt_v2_b2_li/checkpoint.pth \
+                  --log_dir=../log/coco/maskrcnn/pvt_v2_b2_li
