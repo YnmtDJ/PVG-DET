@@ -46,7 +46,11 @@ Please organize the dataset as follows:
 
 ## Train
 You can train the model by running the script `./start.sh`.  
-Details of the training parameters can be viewed in `./util/option.py`.
+Details of the training parameters can be viewed in `./util/option.py`.  
+Note that:  
+`--dataset_name` only supports `coco, visdrone`  
+`--baseline` only supports `fcos, retinanet, fasterrcnn, maskrcnn`  
+`--backbone` only supports `resnet18, resnet50, pvt_v2_b1, pvt_v2_b2_li, pvg_t, pvg_s`  
 
 ## Visualize
 Here is an example of the recognition results.
